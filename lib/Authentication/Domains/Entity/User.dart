@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserApp {
   String id;
   String userName;
@@ -6,6 +8,8 @@ class UserApp {
   String? otherName;
   String? address;
   String email;
+  bool? isOnline;
+  Timestamp? lastActive;
 
   UserApp(
       {required this.id,
@@ -14,7 +18,9 @@ class UserApp {
       this.phoneNumber,
       this.avatarUrl,
       this.otherName,
-      this.address});
+      this.address,
+      this.isOnline,
+      this.lastActive});
 
   //from Json
   factory UserApp.fromJson(Map<String, dynamic> json) {
@@ -25,7 +31,9 @@ class UserApp {
         avatarUrl: json['avatar'] ?? '',
         otherName: json['otherName'] ?? '',
         email: json['email'] as String,
-        address: json['address'] ?? '');
+        address: json['address'] ?? '',
+        isOnline: json['isOnline'] ?? false,
+        lastActive: json['lastActive']);
   }
 
   //to Json
@@ -36,6 +44,8 @@ class UserApp {
         'avatar': avatarUrl,
         'otherName': otherName,
         'email': email,
-        'address': address
+        'address': address,
+        'isOnline': isOnline,
+        'lastActive': lastActive
       };
 }

@@ -53,6 +53,7 @@ class UserData implements UserRepo{
       if(user == null){
         return null;
       }else{
+        //get 
         UserApp currentUser = await _firebaseFirestore.collection('UserData').withConverter(
             fromFirestore: (snapshot,_) =>UserApp.fromJson(snapshot.data()!),
             toFirestore: (user,_)=> user.toJson()
@@ -75,5 +76,14 @@ class UserData implements UserRepo{
     } on FirebaseAuthException catch(e){
       return null;
     }
+  }
+
+  @override
+  Future<void> updateOnline(bool isOnline)async {
+    final user = await _firebaseAuth.currentUser;
+    await _firebaseFirestore.collection('UserData').doc(user!.uid).update({
+          'isOnline': isOnline,
+          'lastActive':Timestamp.fromDate(DateTime.now())
+        });
   }
 }

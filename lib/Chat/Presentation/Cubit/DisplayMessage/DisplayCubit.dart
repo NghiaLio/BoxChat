@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names, constant_identifier_names, avoid_print
+
 import 'dart:io';
 
 import 'package:chat_app/Chat/Domain/Models/ChatRoom.dart';
@@ -74,6 +76,7 @@ class DisplayCubit extends Cubit<DisplayState> {
           .list(path: '$path_storage$ChatID/');
       return listFiles.any((file) => file.name == nameImage);
     } on Exception catch (e) {
+      print(e);
       return false;
     }
   }

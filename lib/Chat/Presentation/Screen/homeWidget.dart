@@ -11,6 +11,8 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../../Authentication/Domains/Entity/User.dart';
 import '../../../Authentication/Presentation/Cubit/authCubit.dart';
+// ignore: unused_import
+import '../../../Config/timePost.dart';
 import '../../../Person/Presentation/Screen/Profile.dart';
 import '../Cubit/Home/HomeChatCubit.dart';
 import '../Cubit/Home/HomeChatState.dart';
@@ -69,11 +71,15 @@ class _homeState extends State<home> {
 
   String displayMessage(ChatRoom chat_room) {
     List<Message> listMessage = chat_room.listMessage;
-    Message lastMessage = listMessage.last;
-    if (lastMessage.type.name == 'Image') {
-      return 'Sent an image';
+    if (listMessage.isEmpty) {
+      return 'Start a chat';
+    } else {
+      Message lastMessage = listMessage.last;
+      if (lastMessage.type.name == 'Image') {
+        return 'Sent an image';
+      }
+      return lastMessage.content;
     }
-    return lastMessage.content;
   }
 
   void openProfiles() {
@@ -277,12 +283,14 @@ class _homeState extends State<home> {
                               widthPlachoder: size.width * 0.15 + 10,
                               heightPlachoder: size.width * 0.15 + 10),
                     )),
-                Container(
-                  height: 20,
-                  width: 20,
-                  decoration: const BoxDecoration(
-                      color: Colors.green, shape: BoxShape.circle),
-                )
+                user.isOnline!
+                    ? Container(
+                        height: 20,
+                        width: 20,
+                        decoration: const BoxDecoration(
+                            color: Colors.green, shape: BoxShape.circle),
+                      )
+                    : Container()
               ],
             ),
             //Name
@@ -376,13 +384,16 @@ class _homeState extends State<home> {
                               fontWeight: FontWeight.w400),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        Text(
-                          '${chat_room.listMessage.last.sendAt.toDate().hour}:${chat_room.listMessage.last.sendAt.toDate().minute}',
-                          style: TextStyle(
-                              fontSize: 16,
-                              color: Theme.of(context).colorScheme.onSurface,
-                              fontWeight: FontWeight.w400),
-                        ),
+                        chat_room.listMessage.isNotEmpty
+                            ? Text(
+                                '${chat_room.listMessage.last.sendAt.toDate().hour}:${chat_room.listMessage.last.sendAt.toDate().minute}',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.w400),
+                              )
+                            : Container(),
                       ],
                     ),
                   )

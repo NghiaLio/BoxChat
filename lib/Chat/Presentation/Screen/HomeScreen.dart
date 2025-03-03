@@ -1,11 +1,15 @@
 
+import 'dart:math';
+
+import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Config/Navigation/NavigationCubit.dart';
 import 'package:chat_app/Config/Navigation/NavigationState.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../Cubit/Home/HomeChatCubit.dart';
 import '../../../Person/Presentation/Screen/SettingWidget.dart';
-import 'SocialWidget.dart';
+import '../../../SocialMedia/Presentation/Screen/SocialWidget.dart';
 import 'homeWidget.dart';
 
 
@@ -24,6 +28,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     context.read<HomeChatCubit>().getListUser();
     context.read<HomeChatCubit>().getAllChat();
+    // for setting user status to active
+    context.read<AuthCubit>().updateIsOnline(true);
+    SystemChannels.lifecycle.setMessageHandler((message){
+      if(message!.contains('pause')){
+        context.read<AuthCubit>().updateIsOnline(false);
+      }
+      if(message.contains('resume')){
+        context.read<AuthCubit>().updateIsOnline(true);
+      }
+      return Future.value(message);
+    });
     super.initState();
   }
 

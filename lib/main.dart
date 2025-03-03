@@ -1,10 +1,11 @@
-
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Chat/Data/ChatData.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/DisplayMessage/DisplayCubit.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/Home/HomeChatCubit.dart';
 import 'package:chat_app/Config/Navigation/NavigationCubit.dart';
 import 'package:chat_app/Person/Presentation/Cubit/personCubit.dart';
+import 'package:chat_app/SocialMedia/Data/SocialData.dart';
+import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialCubits.dart';
 import 'package:chat_app/Theme/Theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -24,15 +25,16 @@ void main() async {
   FlutterNativeSplash.remove();
   //firebase setup
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform,);
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await dotenv.load(fileName: ".env");
   //supabase setup
   await Supabase.initialize(
-    url: dotenv.env['URL_SUPABASE']!,
-    anonKey: dotenv.env['ANONKEY_SUPABASE']!
-  );
+      url: dotenv.env['URL_SUPABASE']!,
+      anonKey: dotenv.env['ANONKEY_SUPABASE']!);
 
-  runApp( MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatefulWidget {
@@ -46,24 +48,27 @@ class _MyAppState extends State<MyApp> {
   final userRepo = UserData();
   final chatRepo = ChatData();
   final person_repo = Persondata();
+  final social_repo = Socialdata();
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
         providers: [
-          BlocProvider(create: (create)=> AuthCubit(userRepo: userRepo)..checkAuth()),
-          BlocProvider(create: (create)=>HomeChatCubit(chatRepo: chatRepo)),
-          BlocProvider(create: (create)=>DisplayCubit(chatRepo: chatRepo)),
-          BlocProvider(create: (create)=>NavigationCubit()),
-          BlocProvider(create: (create)=>Personcubit(person_repo: person_repo, userRepo: userRepo))
+          BlocProvider(
+              create: (create) => AuthCubit(userRepo: userRepo)..checkAuth()),
+          BlocProvider(create: (create) => HomeChatCubit(chatRepo: chatRepo)),
+          BlocProvider(create: (create) => DisplayCubit(chatRepo: chatRepo)),
+          BlocProvider(create: (create) => NavigationCubit()),
+          BlocProvider(
+              create: (create) =>
+                  Personcubit(person_repo: person_repo, userRepo: userRepo)),
+          BlocProvider(
+              create: (create) => Socialcubits(socialRepo: social_repo))
         ],
         child: MaterialApp(
           title: 'Flutter Demo',
           theme: lightMode,
           home: const AuthScreen(),
-        )
-    );
+        ));
   }
 }
-
-

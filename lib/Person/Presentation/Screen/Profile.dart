@@ -1,5 +1,6 @@
 // ignore_for_file: must_be_immutable
 
+// ignore: unused_import
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chat_app/Config/AleartDiaglog.dart';
 import 'package:chat_app/Config/Avatar.dart';
@@ -25,15 +26,26 @@ class _ProfileState extends State<Profile> {
         context: context, builder: (c) => const dialog(text: 'Not update yet'));
   }
 
-  Future<List<String>> getPhotoFromStorage(String currentUserID) async {
-    final list = await Supabase.instance.client.storage
+  Future<List<String>?> getPhotoFromStorage(String currentUserID) async {
+    final listImageOfAvatar = await Supabase.instance.client.storage
         .from('avatar')
         .list(path: '$currentUserID/');
-    return list
+    final listImageOfPost = await Supabase.instance.client.storage
+        .from('post')
+        .list(path: '$currentUserID/');
+    final List<String> convertListOfAvavtar =  listImageOfAvatar
         .map((e) => Supabase.instance.client.storage
             .from('avatar')
             .getPublicUrl('$currentUserID/${e.name}'))
         .toList();
+        final List<String> convertListOfPost =  listImageOfPost
+        .map((e) => Supabase.instance.client.storage
+            .from('post')
+            .getPublicUrl('$currentUserID/${e.name}'))
+        .toList();
+    final List<String> list = convertListOfPost + convertListOfAvavtar;
+    if(list.isEmpty) return null;
+    return list;
   }
 
   @override

@@ -59,8 +59,14 @@ class AuthCubit extends Cubit<authState>{
       emit(FailAuth('Tạo tài khoản thất bại, thử lại sau'));
     }
   }
+  //update online
+  Future<void> updateIsOnline(bool isOnline)async {
+    await userRepo.updateOnline(isOnline);
+  }
+
   //logout
   Future<void> logOut()async{
+    await updateIsOnline(false);
     await userRepo.logOut();
     emit(UnAuthenticated());
   }

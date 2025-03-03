@@ -544,6 +544,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.1"
+  like_button:
+    dependency: "direct main"
+    description:
+      name: like_button
+      sha256: "08e6a45b78888412df5d351786c550205ad3a677e72a0820d5bbc0b063c8a463"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.5"
   lints:
     dependency: transitive
     description:
@@ -712,6 +720,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.2"
+  readmore:
+    dependency: "direct main"
+    description:
+      name: readmore
+      sha256: e8fca2bd397b86342483b409e2ec26f06560a5963aceaa39b27f30722b506187
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   realtime_client:
     dependency: transitive
     description:

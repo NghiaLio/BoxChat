@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+// ignore: unused_import
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
@@ -9,6 +10,8 @@ import 'package:chat_app/Chat/Domain/Models/ChatRoom.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/DisplayMessage/DisplayCubit.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/DisplayMessage/DisplayState.dart';
 import 'package:chat_app/Config/Avatar.dart';
+import 'package:chat_app/Config/timePost.dart';
+import 'package:chat_app/Person/Presentation/Screen/Profile.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -100,7 +103,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future pickImage(String receiveID, String currentID) async {
-    final ID = [currentID,receiveID];
+    final ID = [currentID, receiveID];
     ID.sort();
     final String chatID = ID.join('_');
     try {
@@ -110,7 +113,7 @@ class _ChatScreenState extends State<ChatScreen> {
       //upload image to storage
       //check image
       final bool isExist =
-          await context.read<DisplayCubit>().checkImage(image.name,chatID );
+          await context.read<DisplayCubit>().checkImage(image.name, chatID);
       if (isExist) {
         saveImageToCloudStore(image);
       } else {
@@ -143,6 +146,15 @@ class _ChatScreenState extends State<ChatScreen> {
       duration: const Duration(milliseconds: 300), // Hiệu ứng mượt
       curve: Curves.easeOut,
     );
+  }
+
+  void viewProfiles(UserApp? userProfile) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (c) => Profile(
+                  userInformation: userProfile,
+                )));
   }
 
   @override
@@ -183,63 +195,84 @@ class _ChatScreenState extends State<ChatScreen> {
                             width: 10,
                           ),
                           //Avatar and name
-                          Row(
-                            children: [
-                              Stack(
-                                alignment: Alignment.bottomRight,
-                                children: [
-                                  Container(
-                                      height: size.width * 0.13,
-                                      width: size.width * 0.13,
-                                      decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface,
-                                              width: 3)),
-                                      clipBehavior: Clip.antiAlias,
-                                      child: const Image(
-                                        image: AssetImage(
-                                            'assets/icons/google.png'),
-                                        fit: BoxFit.cover,
-                                      )),
-                                  Container(
-                                    height: 20,
-                                    width: 20,
-                                    decoration: const BoxDecoration(
-                                        color: Colors.green,
-                                        shape: BoxShape.circle),
-                                  )
-                                ],
-                              ),
-                              const SizedBox(
-                                width: 15,
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    receiveUser!.userName,
-                                    style: TextStyle(
-                                        fontSize: 21,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surface,
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    'Active now',
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                        fontWeight: FontWeight.w400),
-                                  )
-                                ],
-                              )
-                            ],
+                          GestureDetector(
+                            onTap: () => viewProfiles(receiveUser),
+                            child: Row(
+                              children: [
+                                Stack(
+                                  alignment: Alignment.bottomRight,
+                                  children: [
+                                    Container(
+                                        height: size.width * 0.13,
+                                        width: size.width * 0.13,
+                                        decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                                width: 3)),
+                                        padding: const EdgeInsets.all(5.0),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(50),
+                                          child: receiveUser!.avatarUrl!.isEmpty
+                                              ? const Image(
+                                                  image: AssetImage(
+                                                      'assets/images/person.jpg'),
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : CacheImage(
+                                                  imageUrl:
+                                                      widget.user!.avatarUrl!,
+                                                  widthPlachoder:
+                                                      size.width * 0.13,
+                                                  heightPlachoder:
+                                                      size.width * 0.13),
+                                        )),
+                                    receiveUser!.isOnline!
+                                        ? Container(
+                                            height: 20,
+                                            width: 20,
+                                            decoration: const BoxDecoration(
+                                                color: Colors.green,
+                                                shape: BoxShape.circle),
+                                          )
+                                        : Container()
+                                  ],
+                                ),
+                                const SizedBox(
+                                  width: 15,
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      receiveUser!.userName,
+                                      style: TextStyle(
+                                          fontSize: 21,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surface,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      receiveUser!.isOnline!
+                                          ? 'Active now'
+                                          : Timepost.timeBefore(receiveUser!
+                                              .lastActive!
+                                              .toDate()),
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
+                                          fontWeight: FontWeight.w400),
+                                    )
+                                  ],
+                                )
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -338,7 +371,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: GestureDetector(
-                        onTap: () => pickImage(receiveUser!.id, currentUser!.id),
+                        onTap: () =>
+                            pickImage(receiveUser!.id, currentUser!.id),
                         child: Icon(
                           Icons.image,
                           size: 28,
@@ -373,30 +407,22 @@ class _ChatScreenState extends State<ChatScreen> {
               ? const Spacer()
               : Stack(
                   children: [
-                    Container(
-                      height: MediaQuery.of(context).size.width * 0.08,
-                      width: MediaQuery.of(context).size.width * 0.08,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              width: 2)),
-                      clipBehavior: Clip.antiAlias,
-                      child: const Image(
-                        image: AssetImage('assets/icons/google.png'),
-                        fit: BoxFit.cover,
-                      ),
+                    Avatar(
+                      height_width: 0.08,
+                      user: receiveUser,
                     ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        height: 10,
-                        width: 10,
-                        decoration: const BoxDecoration(
-                            color: Colors.green, shape: BoxShape.circle),
-                      ),
-                    )
+                    receiveUser!.isOnline!
+                        ? Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              height: 10,
+                              width: 10,
+                              decoration: const BoxDecoration(
+                                  color: Colors.green, shape: BoxShape.circle),
+                            ),
+                          )
+                        : Container()
                   ],
                 ),
           Column(
