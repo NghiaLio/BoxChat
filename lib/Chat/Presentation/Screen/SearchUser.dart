@@ -18,7 +18,7 @@ class _SearchUserState extends State<SearchUser> {
   final searchController = TextEditingController();
   List<Widget> listTab = const [
     Tab(
-      text: 'User',
+      text: 'Friends',
     ),
     Tab(
       text: 'Message',

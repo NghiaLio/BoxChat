@@ -5,86 +5,94 @@ import 'package:chat_app/Chat/Presentation/Cubit/Home/HomeChatState.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class HomeChatCubit extends Cubit<HomeChatState>{
+class HomeChatCubit extends Cubit<HomeChatState> {
   final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
 
-  HomeChatCubit({required this.chatRepo}) :super(initialChat());
+  HomeChatCubit({required this.chatRepo}) : super(initialChat());
 
   final ChatRepo chatRepo;
 
-  List<UserApp>? _listUser;
+  List<UserApp>? _listFriends;
 
+  List<UserApp>? get listUser => _listFriends;
 
-  List<UserApp>? get listUser => _listUser;
-
-  //getUser
-  Future<List<UserApp?>?> getListUser() async{
+  //getAllFriends
+  Future<List<UserApp?>?> getListFriends() async {
     emit(loading());
-    try{
-      Stream<QuerySnapshot<Map<String, dynamic>>> Stream_snapshots = chatRepo.getAllUser();
+    try {
+      Stream<QuerySnapshot<Map<String, dynamic>>> Stream_snapshots =
+          chatRepo.getAllFriend();
       Stream_snapshots.listen(
-          (QuerySnapshot<Map<String, dynamic>> snapshots){
-            List<UserApp>? parseList = snapshots.docs.map((e)=> UserApp.fromJson(e.data())).toList();
-            _listUser = parseList;
-            if(state is getUserSuccess){
-              final currentState = state as getUserSuccess;
-              emit(currentState.copyWith(listUser: parseList));
-            }else{
-              //fisrt initial
-              emit(getUserSuccess(listUser: parseList, listChat: []));
-
-            }
-          },
-        onError: (error){
-            emit(onError(error.toString()));
+          (QuerySnapshot<Map<String, dynamic>> snapshots) async {
+        UserApp user = snapshots.docs
+            .map((e) => UserApp.fromJson(e.data()))
+            .toList()
+            .first;
+        final List<String>? listFriends = user.friends!;
+        if (listFriends!.isNotEmpty) {
+          List<UserApp>? parseList =
+              await Future.wait(listFriends.map((id) async {
+            return await chatRepo.getUserbyID(id);
+          }));
+          _listFriends = parseList;
+          if (state is getUserSuccess) {
+            final currentState = state as getUserSuccess;
+            emit(currentState.copyWith(listUser: parseList));
+          } else {
+            //fisrt initial
+            emit(getUserSuccess(listUser: parseList, listChat: []));
+          }
         }
-      );
-    }catch (e){
+      }, onError: (error) {
+        emit(onError(error.toString()));
+      });
+    } catch (e) {
       emit(onError(e.toString()));
     }
     return null;
   }
 
   //check chat room
-  Future<bool> checkChat(String id2) async{
+  Future<bool> checkChat(String id2) async {
     final check = await chatRepo.checkChatRoom(id2);
-    if(check != null){
+    if (check != null) {
       return check;
     }
     return false;
   }
 
   //create chat room
-  Future<ChatRoom> createChat(String ID2)async{
+  Future<ChatRoom> createChat(String ID2) async {
     final chat = await chatRepo.createChatRoom(ID2);
     return chat;
   }
+
   //get list chat room
-  Future<List<ChatRoom>?> getAllChat() async{
+  Future<List<ChatRoom>?> getAllChat() async {
     emit(loading());
-    try{
-      Stream<QuerySnapshot<Map<String,dynamic>>> stream = chatRepo.getAllChat();
-      stream.listen(
-          (QuerySnapshot<Map<String,dynamic>> snapshots){
-            List<ChatRoom>? parseList = snapshots.docs.map((e)=> ChatRoom.fromJson(e.data())).toList();
-              if(state is getUserSuccess) {
-                final currentState = state as getUserSuccess;
-                emit(currentState.copyWith(listChat: parseList));
-              }else{
-                emit(getUserSuccess(listUser: [], listChat: parseList));
-              }
-          },
-          onError: (error){
-            emit(onError(error.toString()));
-          }
-      );
-    }catch(e){
+    try {
+      Stream<QuerySnapshot<Map<String, dynamic>>> stream =
+          chatRepo.getAllChat();
+      stream.listen((QuerySnapshot<Map<String, dynamic>> snapshots) {
+        List<ChatRoom>? parseList =
+            snapshots.docs.map((e) => ChatRoom.fromJson(e.data())).toList();
+        if (state is getUserSuccess) {
+          final currentState = state as getUserSuccess;
+          emit(currentState.copyWith(listChat: parseList));
+        } else {
+          emit(getUserSuccess(listUser: [], listChat: parseList));
+        }
+      }, onError: (error) {
+        emit(onError(error.toString()));
+      });
+    } catch (e) {
       emit(onError(e.toString()));
     }
     return null;
   }
+
   //delete chat room
-    Future<void> deleteChatRoom(String chatID) async{
-      return _firebaseFirestore.collection('Chats').doc(chatID).delete();
-    }
+  Future<void> deleteChatRoom(String chatID) async {
+    return _firebaseFirestore.collection('Chats').doc(chatID).delete();
+  }
 }

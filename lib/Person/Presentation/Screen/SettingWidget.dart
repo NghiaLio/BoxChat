@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../Authentication/Domains/Entity/User.dart';
+import '../../../Friends/Presentation/Screen/FriendScreen.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -42,6 +43,15 @@ class _SettingScreenState extends State<SettingScreen> {
         MaterialPageRoute(
             builder: (c) => Profile(
                   userInformation: user,
+                )));
+  }
+
+  void tapToAddFriend() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (c) => FriendScreen(
+                  userApp: currentUser,
                 )));
   }
 
@@ -174,7 +184,7 @@ class _SettingScreenState extends State<SettingScreen> {
             _itemFunction(context, Icons.help, 'Help',
                 'FAQ, contact us, privacy policy', null),
             _itemFunction(context, Icons.person_add_alt, 'Add friend',
-                'Invite friends, contacts', null),
+                'Invite friends, contacts', () => tapToAddFriend()),
             _itemFunction(context, Icons.logout, 'Log out',
                 'Log out of all devices', () => logout()),
           ],

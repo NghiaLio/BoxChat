@@ -3,6 +3,8 @@ import 'package:chat_app/Chat/Data/ChatData.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/DisplayMessage/DisplayCubit.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/Home/HomeChatCubit.dart';
 import 'package:chat_app/Config/Navigation/NavigationCubit.dart';
+import 'package:chat_app/Friends/Data/FriendData.dart';
+import 'package:chat_app/Friends/Presentation/Cubit/FriendCubit.dart';
 import 'package:chat_app/Person/Presentation/Cubit/personCubit.dart';
 import 'package:chat_app/SocialMedia/Data/SocialData.dart';
 import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialCubits.dart';
@@ -49,6 +51,7 @@ class _MyAppState extends State<MyApp> {
   final chatRepo = ChatData();
   final person_repo = Persondata();
   final social_repo = Socialdata();
+  final friend_repo = FriendData();
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -63,7 +66,9 @@ class _MyAppState extends State<MyApp> {
               create: (create) =>
                   Personcubit(person_repo: person_repo, userRepo: userRepo)),
           BlocProvider(
-              create: (create) => Socialcubits(socialRepo: social_repo))
+              create: (create) => Socialcubits(socialRepo: social_repo)),
+          BlocProvider(
+              create: (create) => Friendcubit(friendsRepo: friend_repo)),
         ],
         child: MaterialApp(
           title: 'Flutter Demo',

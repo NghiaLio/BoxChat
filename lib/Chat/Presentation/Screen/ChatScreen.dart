@@ -98,7 +98,8 @@ class _ChatScreenState extends State<ChatScreen> {
         senderID: currentUser!.id,
         content: image_url,
         type: MessageType.Image,
-        sendAt: Timestamp.fromDate(DateTime.now()));
+        sendAt: Timestamp.fromDate(DateTime.now()),
+        seen: false);
     await context.read<DisplayCubit>().sendMess(mess, receiveUser!.id);
   }
 
@@ -136,7 +137,8 @@ class _ChatScreenState extends State<ChatScreen> {
         senderID: currentUser!.id,
         content: content!,
         type: MessageType.Text,
-        sendAt: Timestamp.fromDate(DateTime.now()));
+        sendAt: Timestamp.fromDate(DateTime.now()),
+        seen: false);
     await context.read<DisplayCubit>().sendMess(mess, receiveUser!.id);
   }
 
@@ -162,6 +164,7 @@ class _ChatScreenState extends State<ChatScreen> {
     currentUser = context.read<AuthCubit>().userData;
     receiveUser = widget.user;
     context.read<DisplayCubit>().getMessageList(receiveUser!.id);
+    context.read<DisplayCubit>().seenMess(receiveUser!.id);
     super.initState();
   }
 
@@ -328,6 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             itemBuilder: (context, index) => _itemMessageChat(
                                 listMess[index].content,
                                 currentUser!.id == listMess[index].senderID,
+                                listMess[index].seen,
                                 listMess[index].type.name,
                                 listMess[index].sendAt,
                                 index)),
@@ -394,6 +398,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _itemMessageChat(
     String text,
     bool isSender,
+    bool isSeen,
     String typeMessage,
     Timestamp time,
     int indexMessage,
@@ -435,6 +440,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   onLongPress: () => openBottomBar(indexMessage),
                   child: typeMessage == 'Text'
                       ? BubbleSpecialThree(
+                          seen: isSeen,
                           text: text,
                           color: isSender
                               ? Theme.of(context).colorScheme.primary
@@ -451,6 +457,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       : SizedBox(
                           width: MediaQuery.of(context).size.width * 0.5,
                           child: BubbleNormalImage(
+                            seen: isSeen,
                             id: text,
                             onTap: () => displayImage(
                                 text, isSender ? currentUser! : receiveUser!),

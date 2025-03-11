@@ -9,6 +9,8 @@ class UserApp {
   String? address;
   String email;
   bool? isOnline;
+  List<String>? requiredAddFriend;
+  List<String>? friends;
   Timestamp? lastActive;
 
   UserApp(
@@ -20,6 +22,8 @@ class UserApp {
       this.otherName,
       this.address,
       this.isOnline,
+      this.requiredAddFriend,
+      this.friends,
       this.lastActive});
 
   //from Json
@@ -33,6 +37,8 @@ class UserApp {
         email: json['email'] as String,
         address: json['address'] ?? '',
         isOnline: json['isOnline'] ?? false,
+        requiredAddFriend: List<String>.from(json['requiredAddFriend']?? []) ,
+        friends: List<String>.from(json['friends'] ?? []),
         lastActive: json['lastActive']);
   }
 
@@ -46,6 +52,8 @@ class UserApp {
         'email': email,
         'address': address,
         'isOnline': isOnline,
+        'requiredAddFriend': requiredAddFriend,
+        'friends': friends,
         'lastActive': lastActive
       };
 }

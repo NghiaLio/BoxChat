@@ -111,7 +111,7 @@ class _homeState extends State<home> {
     return BlocConsumer<HomeChatCubit, HomeChatState>(
         builder: (context, state) {
           print(state);
-          if (state is getUserSuccess) {
+          if (state is getUserSuccess && state.listUser!.isNotEmpty) {
             List<UserApp> listUser = state.listUser ?? [];
             List<ChatRoom> listChat = state.listChat ?? [];
             return _homeWidget(listUser, listChat);
@@ -313,6 +313,16 @@ class _homeState extends State<home> {
     String otherID =
         chat_room.participant.firstWhere((test) => test != currentUser!.id);
     UserApp otherUser = listUser.firstWhere((test) => test.id == otherID);
+
+    bool isSeenMessage() {
+      if (chat_room.listMessage.isNotEmpty) {
+        if (chat_room.listMessage.last.senderID == otherID) {
+          return chat_room.listMessage.last.seen;
+        }
+      }
+      return false;
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: GestureDetector(
@@ -380,8 +390,12 @@ class _homeState extends State<home> {
                           displayMessage(chat_room),
                           style: TextStyle(
                               fontSize: 16,
-                              color: Theme.of(context).colorScheme.onSurface,
-                              fontWeight: FontWeight.w400),
+                              color: isSeenMessage()
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : Theme.of(context).colorScheme.surface,
+                              fontWeight: isSeenMessage()
+                                  ? FontWeight.w400
+                                  : FontWeight.w700),
                           overflow: TextOverflow.ellipsis,
                         ),
                         chat_room.listMessage.isNotEmpty

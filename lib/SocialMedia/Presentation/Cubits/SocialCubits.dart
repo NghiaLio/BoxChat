@@ -102,7 +102,7 @@ class Socialcubits extends Cubit<Socialstate> {
         emit(loadFail());
       });
     } catch (e) {
-      print(e);
+      print(e.toString() + 'vbv');
       emit(loadFail());
     }
     return null;

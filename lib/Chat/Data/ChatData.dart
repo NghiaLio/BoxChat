@@ -1,3 +1,4 @@
+import 'package:chat_app/Authentication/Domains/Entity/User.dart';
 import 'package:chat_app/Chat/Domain/Repo/ChatRepo.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,9 +10,19 @@ class ChatData implements ChatRepo{
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   @override
-  Stream<QuerySnapshot<Map<String, dynamic>>> getAllUser() {
+  Future<UserApp> getUserbyID(String ID)async {
+    final UserRef = _firebaseFirestore.collection('UserData').withConverter<UserApp>(
+      fromFirestore: (snapshot, _) => UserApp.fromJson(snapshot.data()!),
+      toFirestore: (user, _) => user.toJson(),
+    );
+    UserApp user = await UserRef.doc(ID).get().then((snapshot) => snapshot.data()!);
+    return user;
+  }
+
+  @override
+  Stream<QuerySnapshot<Map<String, dynamic>>> getAllFriend() {
     return _firebaseFirestore.collection('UserData')
-        .where('id', isNotEqualTo: _firebaseAuth.currentUser!.uid)
+        .where('id', isEqualTo: _firebaseAuth.currentUser!.uid)
         .snapshots();
   }
 
@@ -72,6 +83,47 @@ class ChatData implements ChatRepo{
       );
     } catch (e) {
       throw Exception(e);
+    }
+  }
+
+  @override
+  Future<void> seenMessage(String ID2)async {
+    try {
+      final genID = [_firebaseAuth.currentUser!.uid,ID2];
+      genID.sort();
+      final String chatID = genID.join('_');
+      //all mess 
+      final List<Message> listMess = await _firebaseFirestore.collection('Chats').doc(chatID).get().then((snapshot){
+        return ChatRoom.fromJson(snapshot.data()!).listMessage;
+      } );
+
+      final List<Message?> listNew = listMess.map((mess){
+        if(!mess.seen && mess.senderID == ID2){
+          return Message(
+            senderID: mess.senderID, 
+            content: mess.content, 
+            type: mess.type, 
+            sendAt: mess.sendAt, 
+            seen: true
+          );
+        }else{
+          return Message(
+            senderID: mess.senderID, 
+            content: mess.content, 
+            type: mess.type, 
+            sendAt: mess.sendAt, 
+            seen: mess.seen
+          );
+        }
+      }).toList();
+    
+      await _firebaseFirestore.collection('Chats').doc(chatID).update(
+        {
+          'listMessage': listNew.map((mess)=> mess!.toMap()).toList()
+        }
+      );
+    } catch (e) {
+      print(e);
     }
   }
 

@@ -67,6 +67,9 @@ class _SettingAccountState extends State<SettingAccount> {
   void DoneEdit(TextEditingController controller) async {
     if (controller == nameController) {
       if (controller.text.isNotEmpty) {
+        setState(() {
+          widget.user!.userName = nameController.text;
+        });
         await context.read<Personcubit>().changeName(nameController.text);
       }
 
@@ -299,7 +302,7 @@ class _SettingAccountState extends State<SettingAccount> {
             width: 20,
           ),
           Text(
-            'User Name',
+            widget.user!.userName,
             style: TextStyle(
                 fontSize: 20,
                 color: Theme.of(context).colorScheme.primary,

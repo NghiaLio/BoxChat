@@ -88,4 +88,9 @@ class DisplayCubit extends Cubit<DisplayState> {
 
   //reply Message
   void replyMessage(int? indexMessage) {}
+
+  //seen message
+  Future<void> seenMess(String ID2) async{
+    await chatRepo.seenMessage(ID2);
+  }
 }
