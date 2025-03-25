@@ -4,7 +4,8 @@ import 'package:chat_app/Chat/Domain/Models/ChatRoom.dart';
 import 'package:chat_app/Chat/Domain/Models/Message.dart';
 import 'package:chat_app/Chat/Presentation/Screen/ChatScreen.dart';
 import 'package:chat_app/Chat/Presentation/Screen/SearchUser.dart';
-import 'package:chat_app/Config/Avatar.dart';
+import 'package:chat_app/Components/Avatar.dart';
+import 'package:chat_app/Components/CircleProgressIndicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -12,7 +13,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../../Authentication/Domains/Entity/User.dart';
 import '../../../Authentication/Presentation/Cubit/authCubit.dart';
 // ignore: unused_import
-import '../../../Config/timePost.dart';
+import '../../../Components/timePost.dart';
 import '../../../Person/Presentation/Screen/Profile.dart';
 import '../Cubit/Home/HomeChatCubit.dart';
 import '../Cubit/Home/HomeChatState.dart';
@@ -100,6 +101,23 @@ class _homeState extends State<home> {
                 )));
   }
 
+  bool isSeenMessage(ChatRoom chat_room) {
+    if (chat_room.listMessage.isNotEmpty &&
+        chat_room.listMessage.last.senderID != currentUser!.id) {
+      return chat_room.listMessage.last.seen;
+    }
+    return true;
+  }
+
+  int numberMessageNotSeen(ChatRoom chat_room) {
+    if (chat_room.listMessage.last.senderID == currentUser!.id) {
+      return 0;
+    }
+    final List listMessageNotSeen =
+        chat_room.listMessage.where((mess) => mess.seen == false).toList();
+    return listMessageNotSeen.length;
+  }
+
   @override
   void initState() {
     currentUser = context.read<AuthCubit>().userData;
@@ -116,8 +134,8 @@ class _homeState extends State<home> {
             List<ChatRoom> listChat = state.listChat ?? [];
             return _homeWidget(listUser, listChat);
           } else {
-            return const Center(
-              child: CircularProgressIndicator(),
+            return  Center(
+              child: Loading(height_width:MediaQuery.of(context).size.width*0.1 , color: Theme.of(context).colorScheme.primary),
             );
           }
         },
@@ -183,7 +201,7 @@ class _homeState extends State<home> {
                         ],
                       ),
                       const SizedBox(
-                        height: 25,
+                        height: 10,
                       ),
                       //ListUsser
                       Expanded(
@@ -285,8 +303,8 @@ class _homeState extends State<home> {
                     )),
                 user.isOnline!
                     ? Container(
-                        height: 20,
-                        width: 20,
+                        height: 15,
+                        width: 15,
                         decoration: const BoxDecoration(
                             color: Colors.green, shape: BoxShape.circle),
                       )
@@ -313,15 +331,6 @@ class _homeState extends State<home> {
     String otherID =
         chat_room.participant.firstWhere((test) => test != currentUser!.id);
     UserApp otherUser = listUser.firstWhere((test) => test.id == otherID);
-
-    bool isSeenMessage() {
-      if (chat_room.listMessage.isNotEmpty) {
-        if (chat_room.listMessage.last.senderID == otherID) {
-          return chat_room.listMessage.last.seen;
-        }
-      }
-      return false;
-    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
@@ -377,12 +386,12 @@ class _homeState extends State<home> {
                   Text(
                     otherUser.userName,
                     style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         color: Theme.of(context).colorScheme.surface,
-                        fontWeight: FontWeight.w600),
+                        fontWeight: FontWeight.w500),
                   ),
                   SizedBox(
-                    width: size.width * 0.72,
+                    width: size.width * 0.72 - 5,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -390,22 +399,54 @@ class _homeState extends State<home> {
                           displayMessage(chat_room),
                           style: TextStyle(
                               fontSize: 16,
-                              color: isSeenMessage()
+                              color: isSeenMessage(chat_room)
                                   ? Theme.of(context).colorScheme.onSurface
                                   : Theme.of(context).colorScheme.surface,
-                              fontWeight: isSeenMessage()
+                              fontWeight: isSeenMessage(chat_room)
                                   ? FontWeight.w400
                                   : FontWeight.w700),
                           overflow: TextOverflow.ellipsis,
                         ),
                         chat_room.listMessage.isNotEmpty
-                            ? Text(
-                                '${chat_room.listMessage.last.sendAt.toDate().hour}:${chat_room.listMessage.last.sendAt.toDate().minute}',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                    fontWeight: FontWeight.w400),
+                            ? Row(
+                                children: [
+                                  numberMessageNotSeen(chat_room) > 0
+                                      ? Container(
+                                          height: size.width * 0.04,
+                                          width: size.width * 0.04,
+                                          decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.red),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            numberMessageNotSeen(chat_room)
+                                                .toString(),
+                                            style: const TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        )
+                                      : Container(),
+                                  const SizedBox(
+                                    width: 10,
+                                  ),
+                                  Text(
+                                    '${chat_room.listMessage.last.sendAt.toDate().hour}:${chat_room.listMessage.last.sendAt.toDate().minute}',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: isSeenMessage(chat_room)
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .surface,
+                                        fontWeight: isSeenMessage(chat_room)
+                                            ? FontWeight.w400
+                                            : FontWeight.w700),
+                                  ),
+                                ],
                               )
                             : Container(),
                       ],

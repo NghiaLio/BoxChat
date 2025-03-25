@@ -1,8 +1,8 @@
 // ignore_for_file: must_be_immutable
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
-import 'package:chat_app/Config/Avatar.dart';
-import 'package:chat_app/Config/TopSnackBar.dart';
-import 'package:chat_app/Config/timePost.dart';
+import 'package:chat_app/Components/Avatar.dart';
+import 'package:chat_app/Components/TopSnackBar.dart';
+import 'package:chat_app/Components/timePost.dart';
 import 'package:chat_app/SocialMedia/Domain/Entities/comment.dart';
 import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialCubits.dart';
 import 'package:flutter/material.dart';

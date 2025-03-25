@@ -12,4 +12,6 @@ abstract class ChatRepo{
   Stream<QuerySnapshot<Map<String,dynamic>>> getMessage(String ID2);
   Future<void> sendMessage(Message mess,String ID2);
   Future<void> seenMessage(String ID2);
+  Future<void> unTailMessage(String ID2); // set un tail message => set tail = false cho cac tin nhan truoc do
+  Future<void> deleteMessage(String ID2, Timestamp time);
 }

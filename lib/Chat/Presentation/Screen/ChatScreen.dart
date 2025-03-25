@@ -9,8 +9,10 @@ import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Chat/Domain/Models/ChatRoom.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/DisplayMessage/DisplayCubit.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/DisplayMessage/DisplayState.dart';
-import 'package:chat_app/Config/Avatar.dart';
-import 'package:chat_app/Config/timePost.dart';
+import 'package:chat_app/Components/Avatar.dart';
+import 'package:chat_app/Components/PlaceHolder.dart';
+import 'package:chat_app/Components/TopSnackBar.dart';
+import 'package:chat_app/Components/timePost.dart';
 import 'package:chat_app/Person/Presentation/Screen/Profile.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,7 +22,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../Domain/Models/Message.dart';
-import 'Components/DisplayImage.dart';
+import '../../../Components/DisplayImage.dart';
 
 class ChatScreen extends StatefulWidget {
   final ChatRoom? chat;
@@ -38,7 +40,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<bool>? isSelected;
 
   bool isReplying = false;
-  String replyingTo = '';
+  Map replyingTo = {};
 
   void openBottomBar(int indexMessage) {
     setState(() {
@@ -54,10 +56,19 @@ class _ChatScreenState extends State<ChatScreen> {
       isShowBottomBar = false;
       if (context.read<DisplayCubit>().listMess![indexMessage].type.name ==
           'Text') {
-        replyingTo =
-            context.read<DisplayCubit>().listMess![indexMessage].content;
+        replyingTo = {
+          'message':
+              context.read<DisplayCubit>().listMess![indexMessage].content,
+          'senderID':
+              context.read<DisplayCubit>().listMess![indexMessage].senderID
+        };
       } else {
-        replyingTo = '#File Image';
+        replyingTo = {
+          'message': '#File Image',
+          "link": context.read<DisplayCubit>().listMess![indexMessage].content,
+          'senderID':
+              context.read<DisplayCubit>().listMess![indexMessage].senderID
+        };
       }
     });
   }
@@ -99,8 +110,10 @@ class _ChatScreenState extends State<ChatScreen> {
         content: image_url,
         type: MessageType.Image,
         sendAt: Timestamp.fromDate(DateTime.now()),
-        seen: false);
+        seen: false,
+        tail: true);
     await context.read<DisplayCubit>().sendMess(mess, receiveUser!.id);
+    await context.read<DisplayCubit>().unTailMess(receiveUser!.id);
   }
 
   Future pickImage(String receiveID, String currentID) async {
@@ -132,14 +145,19 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void sendMessage(String? content) async {
+  void sendMessage(String? content, Map? replying) async {
+    print(replying);
     final Message mess = Message(
         senderID: currentUser!.id,
         content: content!,
         type: MessageType.Text,
         sendAt: Timestamp.fromDate(DateTime.now()),
-        seen: false);
+        seen: false,
+        tail: true,
+        replyingTo: replying);
+    cancleReply();
     await context.read<DisplayCubit>().sendMess(mess, receiveUser!.id);
+    await context.read<DisplayCubit>().unTailMess(receiveUser!.id);
   }
 
   void scrollToBottom() {
@@ -157,6 +175,43 @@ class _ChatScreenState extends State<ChatScreen> {
             builder: (c) => Profile(
                   userInformation: userProfile,
                 )));
+  }
+
+  String getNameReply(String id) {
+    if (currentUser!.id == id) {
+      return 'You replied yourself';
+    } else {
+      return 'You replied ${receiveUser!.userName}';
+    }
+  }
+
+  void copyText(int indexMessage) {
+    setState(() {
+      isShowBottomBar = false;
+    });
+    context.read<DisplayCubit>().selectedMessage(null);
+    Clipboard.setData(ClipboardData(
+        text: context.read<DisplayCubit>().listMess![indexMessage].content));
+    showSnackBar.show_success('Copied', context);
+  }
+
+  void delMessage(int indexMessage) async {
+    setState(() {
+      isShowBottomBar = false;
+    });
+    context.read<DisplayCubit>().selectedMessage(null);
+    if (context.read<DisplayCubit>().listMess![indexMessage].senderID !=
+        currentUser!.id) {
+      showSnackBar.show_error('You can not delete this message', context);
+      return;
+    }
+
+    await context.read<DisplayCubit>().deleteMessage(receiveUser!.id,
+        context.read<DisplayCubit>().listMess![indexMessage].sendAt);
+  }
+
+  void moveToImage() {
+    showSnackBar.show_error('Not support', context);
   }
 
   @override
@@ -235,8 +290,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                         )),
                                     receiveUser!.isOnline!
                                         ? Container(
-                                            height: 20,
-                                            width: 20,
+                                            height: 15,
+                                            width: 15,
                                             decoration: const BoxDecoration(
                                                 color: Colors.green,
                                                 shape: BoxShape.circle),
@@ -253,7 +308,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     Text(
                                       receiveUser!.userName,
                                       style: TextStyle(
-                                          fontSize: 21,
+                                          fontSize: 18,
                                           color: Theme.of(context)
                                               .colorScheme
                                               .surface,
@@ -266,7 +321,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                               .lastActive!
                                               .toDate()),
                                       style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: 12,
                                           color: Theme.of(context)
                                               .colorScheme
                                               .onSurface,
@@ -312,7 +367,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   print(state);
                   if (state is loadingMessage) {
                     return const Center(
-                      child: CircularProgressIndicator(),
+                      // child: Loading(height_width: MediaQuery.of(context).size.width*0.1 , color: Theme.of(context).colorScheme.primary),
+                      child: PlaceHolder(),
                     );
                   } else if (state is loadedMessage) {
                     final List<Message> listMess = state.listMessage ?? [];
@@ -329,11 +385,8 @@ class _ChatScreenState extends State<ChatScreen> {
                             controller: _scrollController,
                             itemCount: listMess.length,
                             itemBuilder: (context, index) => _itemMessageChat(
-                                listMess[index].content,
+                                listMess[index],
                                 currentUser!.id == listMess[index].senderID,
-                                listMess[index].seen,
-                                listMess[index].type.name,
-                                listMess[index].sendAt,
                                 index)),
                       ),
                     );
@@ -349,16 +402,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 //input text
                 MessageBar(
-                  onSend: (content) => sendMessage(
-                    content,
-                  ),
+                  onSend: (content) => sendMessage(content, replyingTo),
                   replying: isReplying,
                   onTapCloseReply: cancleReply,
-                  replyingTo: replyingTo,
+                  replyingTo: replyingTo.isEmpty ? '' : replyingTo['message'],
                   sendButtonColor: Theme.of(context).colorScheme.primary,
                   messageBarColor: Theme.of(context).scaffoldBackgroundColor,
                   textFieldTextStyle: TextStyle(
-                      fontSize: 20,
+                      fontSize: 17,
                       color: Theme.of(context).colorScheme.surface),
                   actions: [
                     Padding(
@@ -396,11 +447,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _itemMessageChat(
-    String text,
+    Message message,
     bool isSender,
-    bool isSeen,
-    String typeMessage,
-    Timestamp time,
     int indexMessage,
   ) {
     int? indexSelected = context.read<DisplayCubit>().indexSelected;
@@ -435,35 +483,131 @@ class _ChatScreenState extends State<ChatScreen> {
                 isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Transform.scale(
-                scale: indexSelected == indexMessage ? 1.4 : 1,
+                scale: indexSelected == indexMessage ? 1.2 : 1,
                 child: GestureDetector(
                   onLongPress: () => openBottomBar(indexMessage),
-                  child: typeMessage == 'Text'
-                      ? BubbleSpecialThree(
-                          seen: isSeen,
-                          text: text,
-                          color: isSender
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context)
-                                  .colorScheme
-                                  .secondaryContainer,
-                          textStyle: TextStyle(
-                              fontSize: 18,
-                              color: Theme.of(context).colorScheme.surface,
-                              fontWeight: FontWeight.w400),
-                          isSender: isSender,
-                          // seen: true,
+                  child: message.type.name == 'Text'
+                      ? Column(
+                          crossAxisAlignment: isSender
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
+                          children: [
+                            message.replyingTo!.isNotEmpty
+                                ? Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 5.0, right: 20, left: 20),
+                                    child: Column(
+                                      crossAxisAlignment: isSender
+                                          ? CrossAxisAlignment.end
+                                          : CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.reply,
+                                              size: 18,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                            ),
+                                            Text(
+                                              getNameReply(message
+                                                  .replyingTo!['senderID']),
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .surface
+                                                      .withOpacity(0.8),
+                                                  fontWeight: FontWeight.w400),
+                                            )
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.all(8.0),
+                                          decoration: BoxDecoration(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primaryContainer,
+                                              borderRadius:
+                                                  BorderRadius.circular(10)),
+                                          child: !message.replyingTo!
+                                                  .containsKey('link')
+                                              ? Text(
+                                                  message
+                                                      .replyingTo!['message'],
+                                                  style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .surface
+                                                          .withOpacity(0.8),
+                                                      fontWeight:
+                                                          FontWeight.w400),
+                                                )
+                                              : GestureDetector(
+                                                  onTap: moveToImage,
+                                                  child: Opacity(
+                                                    opacity: 0.5,
+                                                    child: SizedBox(
+                                                      width:
+                                                          MediaQuery.of(context)
+                                                                  .size
+                                                                  .width *
+                                                              0.4,
+                                                      child: CacheImage(
+                                                          imageUrl: message
+                                                                  .replyingTo![
+                                                              'link'],
+                                                          widthPlachoder:
+                                                              MediaQuery.of(
+                                                                          context)
+                                                                      .size
+                                                                      .width *
+                                                                  0.4,
+                                                          heightPlachoder:
+                                                              MediaQuery.of(
+                                                                          context)
+                                                                      .size
+                                                                      .width *
+                                                                  0.4),
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : Container(),
+                            BubbleSpecialThree(
+                              seen: message.seen,
+                              tail: message.tail,
+                              text: message.content,
+                              color: isSender
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .secondaryContainer,
+                              textStyle: TextStyle(
+                                  fontSize: 18,
+                                  color: Theme.of(context).colorScheme.surface,
+                                  fontWeight: FontWeight.w400),
+                              isSender: isSender,
+                              // seen: true,
+                            ),
+                          ],
                         )
                       : SizedBox(
                           width: MediaQuery.of(context).size.width * 0.5,
                           child: BubbleNormalImage(
-                            seen: isSeen,
-                            id: text,
-                            onTap: () => displayImage(
-                                text, isSender ? currentUser! : receiveUser!),
+                            seen: message.seen,
+                            tail: message.tail,
+                            id: message.content,
+                            onTap: () => displayImage(message.content,
+                                isSender ? currentUser! : receiveUser!),
                             onLongPress: null,
                             image: CacheImage(
-                                imageUrl: text,
+                                imageUrl: message.content,
                                 widthPlachoder: 0.6,
                                 heightPlachoder: 0.4),
                             isSender: isSender,
@@ -476,7 +620,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ? const EdgeInsets.only(right: 8.0)
                     : const EdgeInsets.only(left: 8.0),
                 child: Text(
-                  '${time.toDate().hour}:${time.toDate().minute}',
+                  '${message.sendAt.toDate().hour}:${message.sendAt.toDate().minute}',
                   style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurface,
@@ -497,7 +641,7 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Padding(
         padding: isShowBottomBar
             ? EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 10)
+                bottom: MediaQuery.of(context).viewInsets.bottom + 5)
             : EdgeInsets.zero,
         child: Container(
           height: MediaQuery.of(context).size.height * 0.09,
@@ -513,9 +657,19 @@ class _ChatScreenState extends State<ChatScreen> {
                     Icons.reply,
                     () => replyMessage(
                         context.read<DisplayCubit>().indexSelected!)),
-                _itemSelectBar('Copy', Icons.copy_rounded, null),
-                _itemSelectBar('Recall', Icons.restart_alt_outlined, null),
-                _itemSelectBar('Repeat', Icons.repeat, null),
+                _itemSelectBar(
+                    'Copy',
+                    Icons.copy_rounded,
+                    () =>
+                        copyText(context.read<DisplayCubit>().indexSelected!)),
+                _itemSelectBar(
+                    'Delete',
+                    Icons.restart_alt_outlined,
+                    () => delMessage(
+                        context.read<DisplayCubit>().indexSelected!)),
+                _itemSelectBar('Repeat', Icons.repeat, () {
+                  showSnackBar.show_error('Not support', context);
+                }),
               ],
             ),
           ),

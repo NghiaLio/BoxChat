@@ -1,6 +1,7 @@
 // ignore_for_file: must_be_immutable
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chat_app/Person/Presentation/Screen/Profile.dart';
 import 'package:flutter/material.dart';
 
 import '../../../Authentication/Domains/Entity/User.dart';
@@ -41,6 +42,16 @@ class _SearchUserState extends State<SearchUser> {
     setState(() {
       listSearchUser = listUserContainText;
     });
+  }
+
+  void tapToSeenProfile(UserApp? user) {
+    FocusScope.of(context).unfocus();
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (c) => Profile(
+                  userInformation: user,
+                )));
   }
 
   @override
@@ -105,7 +116,7 @@ class _SearchUserState extends State<SearchUser> {
                         children: [
                           Icon(
                             Icons.search_rounded,
-                            size: 26,
+                            size: 22,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                           const SizedBox(
@@ -117,7 +128,9 @@ class _SearchUserState extends State<SearchUser> {
                               controller: searchController,
                               onChanged: (value) => search(value),
                               decoration: const InputDecoration(
-                                  hintText: 'Search', border: InputBorder.none),
+                                  hintText: 'Search',
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.all(5.0)),
                               style: TextStyle(
                                   fontSize: 18,
                                   color: Theme.of(context).colorScheme.surface,
@@ -183,32 +196,36 @@ class _SearchUserState extends State<SearchUser> {
           )
         : ListView.builder(
             itemCount: listSearchUser.length,
-            itemBuilder: (context, index) => Container(
-                  height: MediaQuery.of(context).size.height * 0.08,
-                  width: MediaQuery.of(context).size.width,
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Colors.red,
-                        backgroundImage:
-                            listSearchUser[index].avatarUrl!.isNotEmpty
-                                ? CachedNetworkImageProvider(
-                                    listSearchUser[index].avatarUrl!)
-                                : const AssetImage('assets/images/person.jpg'),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        listSearchUser[index].userName,
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: Theme.of(context).colorScheme.surface,
-                            fontWeight: FontWeight.w500),
-                      )
-                    ],
+            itemBuilder: (context, index) => GestureDetector(
+                  onTap: () => tapToSeenProfile(listSearchUser[index]),
+                  child: Container(
+                    height: MediaQuery.of(context).size.height * 0.08,
+                    width: MediaQuery.of(context).size.width,
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Colors.red,
+                          backgroundImage: listSearchUser[index]
+                                  .avatarUrl!
+                                  .isNotEmpty
+                              ? CachedNetworkImageProvider(
+                                  listSearchUser[index].avatarUrl!)
+                              : const AssetImage('assets/images/person.jpg'),
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        Text(
+                          listSearchUser[index].userName,
+                          style: TextStyle(
+                              fontSize: 18,
+                              color: Theme.of(context).colorScheme.surface,
+                              fontWeight: FontWeight.w500),
+                        )
+                      ],
+                    ),
                   ),
                 ));
   }

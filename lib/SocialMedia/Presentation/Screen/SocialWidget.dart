@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
-import 'package:chat_app/Config/TopSnackBar.dart';
-import 'package:chat_app/Config/timePost.dart';
+import 'package:chat_app/Components/CircleProgressIndicator.dart';
+import 'package:chat_app/Components/DisplayImage.dart';
+import 'package:chat_app/Components/TopSnackBar.dart';
+import 'package:chat_app/Components/timePost.dart';
 import 'package:chat_app/SocialMedia/Domain/Entities/likes.dart';
 import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialCubits.dart';
 import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialState.dart';
@@ -13,7 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:readmore/readmore.dart';
 
-import '../../../Config/Avatar.dart';
+import '../../../Components/Avatar.dart';
 import '../../Domain/Entities/post.dart';
 
 class SocialScreen extends StatefulWidget {
@@ -30,7 +32,15 @@ class _SocialScreenState extends State<SocialScreen> {
     Navigator.push(context, MaterialPageRoute(builder: (c) => Searchsocial()));
   }
 
-  void selectImage() {}
+  void selectImage() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (c) => Createpostscreen(
+                  currentUser: currentUser,
+                  isShowPickedImage: true,
+                )));
+  }
 
   void openCreatePostScreen() {
     Navigator.push(
@@ -38,6 +48,7 @@ class _SocialScreenState extends State<SocialScreen> {
         MaterialPageRoute(
             builder: (c) => Createpostscreen(
                   currentUser: currentUser,
+                  isShowPickedImage: false,
                 )));
   }
 
@@ -86,6 +97,17 @@ class _SocialScreenState extends State<SocialScreen> {
               currentUser: currentUser,
               numFavor: post.listLikes!.length,
             ));
+  }
+
+  void openImage(String imageUrl, String user_id, String user_name) {
+    final UserApp user = UserApp(id: user_id, userName: user_name, email: '');
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (c) => DisplayImage(
+                  urlImage: imageUrl,
+                  userOfImage: user,
+                )));
   }
 
   @override
@@ -154,7 +176,7 @@ class _SocialScreenState extends State<SocialScreen> {
 
   Widget _postBar() {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.1 - 18,
+      height: MediaQuery.of(context).size.height * 0.1 - 10,
       width: MediaQuery.of(context).size.width,
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10.0),
       child: Column(
@@ -207,7 +229,7 @@ class _SocialScreenState extends State<SocialScreen> {
               child: Container(
                 height: MediaQuery.of(context).size.height * 0.6,
                 alignment: Alignment.center,
-                child: const CircularProgressIndicator(),
+                child:  Loading(height_width: MediaQuery.of(context).size.width*0.1, color:Theme.of(context).colorScheme.primary ),
               ),
             );
           }
@@ -333,9 +355,15 @@ class _SocialScreenState extends State<SocialScreen> {
               ),
               //Image
               post.post_image_url.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: post.post_image_url,
-                      maxHeightDiskCache: 300,
+                  ? GestureDetector(
+                      onTap: () => openImage(
+                          post.post_image_url, post.user_id, post.user_name),
+                      child: Center(
+                        child: CachedNetworkImage(
+                          imageUrl: post.post_image_url,
+                          maxHeightDiskCache: 300,
+                        ),
+                      ),
                     )
                   : Container(),
               //Like, comment

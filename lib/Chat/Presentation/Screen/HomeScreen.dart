@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
-import 'package:chat_app/Config/Navigation/NavigationCubit.dart';
-import 'package:chat_app/Config/Navigation/NavigationState.dart';
+import 'package:chat_app/Components/Navigation/NavigationCubit.dart';
+import 'package:chat_app/Components/Navigation/NavigationState.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

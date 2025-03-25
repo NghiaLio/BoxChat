@@ -86,11 +86,17 @@ class DisplayCubit extends Cubit<DisplayState> {
     _indexSelected = indexMessage;
   }
 
-  //reply Message
-  void replyMessage(int? indexMessage) {}
+  //delete Message
+  Future<void> deleteMessage(String ID2, Timestamp time)async {
+    await chatRepo.deleteMessage(ID2, time);
+  }
 
   //seen message
   Future<void> seenMess(String ID2) async{
     await chatRepo.seenMessage(ID2);
+  }
+  //set tail = false
+  Future<void> unTailMess(String ID2) async{
+    await chatRepo.unTailMessage(ID2);
   }
 }

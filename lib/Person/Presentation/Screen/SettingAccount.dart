@@ -2,15 +2,15 @@
 
 import 'dart:io';
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
-import 'package:chat_app/Config/AleartDiaglog.dart';
-import 'package:chat_app/Config/Avatar.dart';
+import 'package:chat_app/Components/AleartDiaglog.dart';
+import 'package:chat_app/Components/Avatar.dart';
 import 'package:chat_app/Person/Presentation/Cubit/personCubit.dart';
 import 'package:chat_app/Person/Presentation/Cubit/personEventState.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../Config/TopSnackBar.dart';
+import '../../../Components/TopSnackBar.dart';
 
 class SettingAccount extends StatefulWidget {
   UserApp? user;
@@ -182,7 +182,7 @@ class _SettingAccountState extends State<SettingAccount> {
                       padding: const EdgeInsets.symmetric(
                           vertical: 10.0, horizontal: 15.0),
                       child: Container(
-                        height: MediaQuery.of(context).size.height * 0.08,
+                        height: MediaQuery.of(context).size.height * 0.09,
                         width: MediaQuery.of(context).size.width,
                         padding: const EdgeInsets.all(10.0),
                         decoration: BoxDecoration(
@@ -319,7 +319,7 @@ class _SettingAccountState extends State<SettingAccount> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
       child: Container(
-        height: size.height * 0.1,
+        height: size.height * 0.1 + 15,
         width: size.width,
         padding: const EdgeInsets.all(10.0),
         decoration: BoxDecoration(
@@ -346,8 +346,9 @@ class _SettingAccountState extends State<SettingAccount> {
                         child: TextField(
                             controller: _controller,
                             autofocus: true,
-                            decoration:
-                                const InputDecoration(border: InputBorder.none),
+                            decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.zero),
                             style: TextStyle(
                                 fontSize: 18,
                                 color: Theme.of(context).colorScheme.surface,

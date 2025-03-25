@@ -1,7 +1,7 @@
 // ignore_for_file: must_be_immutable
 
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
-import 'package:chat_app/Config/Avatar.dart';
+import 'package:chat_app/Components/Avatar.dart';
 import 'package:chat_app/Friends/Presentation/Cubit/FriendCubit.dart';
 import 'package:chat_app/Friends/Presentation/Cubit/FriendState.dart';
 import 'package:flutter/material.dart';

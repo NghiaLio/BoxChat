@@ -1,6 +1,6 @@
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
-import 'package:chat_app/Config/Avatar.dart';
-import 'package:chat_app/Config/Navigation/NavigationCubit.dart';
+import 'package:chat_app/Components/Avatar.dart';
+import 'package:chat_app/Components/Navigation/NavigationCubit.dart';
 import 'package:chat_app/Person/Presentation/Screen/Profile.dart';
 import 'package:chat_app/Person/Presentation/Screen/SettingAccount.dart';
 import 'package:flutter/material.dart';
@@ -137,9 +137,9 @@ class _SettingScreenState extends State<SettingScreen> {
                       Text(
                         currentUser!.userName,
                         style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 20,
                             color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600),
+                            fontWeight: FontWeight.w500),
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -147,7 +147,7 @@ class _SettingScreenState extends State<SettingScreen> {
                           Text(
                             currentUser!.email,
                             style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 14,
                                 color: Theme.of(context).colorScheme.onSurface,
                                 fontWeight: FontWeight.w400),
                             overflow: TextOverflow.ellipsis,
@@ -196,38 +196,39 @@ class _SettingScreenState extends State<SettingScreen> {
   Widget _itemFunction(BuildContext context, IconData icon, String title,
       String detail, Function()? onTap) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 15.0),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundColor: Colors.grey.shade300,
-              child: Center(
-                child: Icon(
-                  icon,
-                  size: 26,
-                  color: Theme.of(context).colorScheme.primary,
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.9,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: Colors.grey.shade300,
+                child: Center(
+                  child: Icon(
+                    icon,
+                    size: 26,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(
-              width: 20,
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                      fontSize: 18,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const SizedBox(
+                width: 20,
+              ),
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.7 - 5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w400),
+                    ),
                     Text(
                       detail,
                       style: TextStyle(
@@ -235,12 +236,12 @@ class _SettingScreenState extends State<SettingScreen> {
                           color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w400),
                       overflow: TextOverflow.ellipsis,
-                    ),
+                    )
                   ],
-                )
-              ],
-            )
-          ],
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );

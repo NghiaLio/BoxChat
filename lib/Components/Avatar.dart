@@ -2,6 +2,7 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
+import 'package:chat_app/Components/CircleProgressIndicator.dart';
 import 'package:flutter/material.dart';
 
 class Avatar extends StatelessWidget {
@@ -47,8 +48,8 @@ class CacheImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CachedNetworkImage(
-        placeholder: (context, url) => const Center(
-              child: CircularProgressIndicator(),
+        placeholder: (context, url) =>  Center(
+              child: Loading(height_width: MediaQuery.of(context).size.width*0.08, color: Theme.of(context).colorScheme.primary),
             ),
         fit: BoxFit.cover,
         errorWidget: (context, url, error) => Container(

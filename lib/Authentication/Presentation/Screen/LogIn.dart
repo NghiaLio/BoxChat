@@ -1,7 +1,8 @@
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Authentication/Presentation/Screen/Register.dart';
 import 'package:chat_app/Authentication/Presentation/Screen/ResetPass.dart';
-import 'package:chat_app/Config/TopSnackBar.dart';
+import 'package:chat_app/Components/CircleProgressIndicator.dart';
+import 'package:chat_app/Components/TopSnackBar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -18,6 +19,7 @@ class _LoginState extends State<Login> {
 
   bool isLoading = false;
   bool isFieldEmpty = false;
+  bool passVisible = true;
 
   void tapToLogin() async {
     String email = emailController.text.trim();
@@ -57,9 +59,12 @@ class _LoginState extends State<Login> {
     Navigator.push(context, MaterialPageRoute(builder: (c) => Register()));
   }
 
-  void backBtn() {
-    // Navigator.pop(context);
+  void visiblePass() {
+    setState(() {
+      passVisible = !passVisible;
+    });
   }
+
   @override
   void initState() {
     emailController.addListener(_onFieldChange);
@@ -81,25 +86,14 @@ class _LoginState extends State<Login> {
       onTap: FocusScope.of(context).unfocus,
       child: Scaffold(
         resizeToAvoidBottomInset: true,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          elevation: 0,
-          leading: IconButton(
-              onPressed: backBtn,
-              icon: Icon(
-                Icons.arrow_back,
-                size: 24,
-                color: Theme.of(context).colorScheme.surface,
-              )),
-        ),
         body: Padding(
           padding: const EdgeInsets.all(15.0),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(
-                  height: 50,
+                SizedBox(
+                  height: size.height * 0.18,
                 ),
                 //Title
                 Text(
@@ -125,47 +119,9 @@ class _LoginState extends State<Login> {
                 const SizedBox(
                   height: 20,
                 ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    itemLogin('assets/icons/facebook.png'),
-                    const SizedBox(
-                      width: 15,
-                    ),
-                    itemLogin('assets/icons/google.png'),
-                  ],
-                ),
-                //divider
-                const SizedBox(
-                  height: 20,
-                ),
-                Row(
-                  children: [
-                    Container(
-                      height: 1,
-                      width: size.width * 0.41,
-                      color: const Color.fromRGBO(205, 209, 208, 1.0),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 11.0),
-                      child: Text(
-                        'OR',
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context).colorScheme.onSurface),
-                      ),
-                    ),
-                    Container(
-                      height: 1,
-                      width: size.width * 0.41,
-                      color: const Color.fromRGBO(205, 209, 208, 1.0),
-                    ),
-                  ],
-                ),
                 //Form
-                const SizedBox(
-                  height: 20,
+                SizedBox(
+                  height: size.height * 0.08,
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,7 +129,7 @@ class _LoginState extends State<Login> {
                     Text(
                       'Your email',
                       style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w500),
                     ),
@@ -188,7 +144,7 @@ class _LoginState extends State<Login> {
                                       .colorScheme
                                       .onSurface))),
                       style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 16,
                           color: Theme.of(context).colorScheme.surface),
                     ),
                   ],
@@ -203,13 +159,27 @@ class _LoginState extends State<Login> {
                     Text(
                       'Password',
                       style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w500),
                     ),
                     TextField(
                       controller: passController,
+                      obscureText: passVisible,
                       decoration: InputDecoration(
+                          suffixIcon: IconButton(
+                            onPressed: visiblePass,
+                            icon: Icon(
+                              !passVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.5),
+                              size: 22,
+                            ),
+                          ),
                           contentPadding:
                               const EdgeInsets.symmetric(vertical: 8.0),
                           enabledBorder: UnderlineInputBorder(
@@ -218,14 +188,14 @@ class _LoginState extends State<Login> {
                                       .colorScheme
                                       .onSurface))),
                       style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 16,
                           color: Theme.of(context).colorScheme.surface),
                     ),
                   ],
                 ),
                 //Btn
                 SizedBox(
-                  height: size.height * 0.20,
+                  height: size.height * 0.2,
                 ),
                 GestureDetector(
                   onTap: tapToLogin,
@@ -240,7 +210,10 @@ class _LoginState extends State<Login> {
                         borderRadius:
                             const BorderRadius.all(Radius.circular(15))),
                     child: isLoading
-                        ? CircularProgressIndicator()
+                        ? Loading(
+                            height_width: size.width * 0.08,
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer)
                         : Text(
                             'Login',
                             style: TextStyle(
@@ -257,26 +230,36 @@ class _LoginState extends State<Login> {
                   height: size.height * 0.07,
                   alignment: Alignment.center,
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      GestureDetector(
-                        onTap: tapToResetPass,
-                        child: Text(
-                          'Forgot password',
-                          style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.primary),
+                      Expanded(
+                        flex: 1,
+                        child: GestureDetector(
+                          onTap: tapToResetPass,
+                          child: Center(
+                            child: Text(
+                              'Forgot password',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary),
+                            ),
+                          ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: tapToRegister,
-                        child: Text(
-                          'Register',
-                          style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.primary),
+                      Expanded(
+                        flex: 1,
+                        child: GestureDetector(
+                          onTap: tapToRegister,
+                          child: Center(
+                            child: Text(
+                              'Register',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary),
+                            ),
+                          ),
                         ),
                       ),
                     ],

@@ -8,11 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../Config/Avatar.dart';
+import '../../../Components/Avatar.dart';
 
 class Createpostscreen extends StatefulWidget {
   UserApp? currentUser;
-  Createpostscreen({super.key, this.currentUser});
+  bool isShowPickedImage;
+  Createpostscreen({super.key, this.currentUser, required this.isShowPickedImage});
 
   @override
   State<Createpostscreen> createState() => _CreatepostscreenState();
@@ -55,6 +56,7 @@ class _CreatepostscreenState extends State<Createpostscreen> {
   }
 
   void createPost() async {
+    Navigator.pop(context);
     final String content = contentController.text.trim();
     if (fileSelected != null) {
       await context.read<Socialcubits>().createPost(content, widget.currentUser,
@@ -64,14 +66,14 @@ class _CreatepostscreenState extends State<Createpostscreen> {
           .read<Socialcubits>()
           .createPost(content, widget.currentUser, null, null);
     }
-
-    Navigator.pop(context);
   }
 
   @override
   void initState() {
     _focusNode.addListener(_onFocusNodeChange);
     contentController.addListener(_onTextFieldChange);
+
+    widget.isShowPickedImage ? pickImage() : null; 
     super.initState();
   }
 
@@ -85,79 +87,81 @@ class _CreatepostscreenState extends State<Createpostscreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 1,
-        leading: IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            icon: Icon(
-              Icons.arrow_back,
-              size: 28,
-              color: Theme.of(context).colorScheme.surface,
-            )),
-        title: Text(
-          'Create Post',
-          style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.surface),
+    return SafeArea(
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 1,
+          leading: IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: Icon(
+                Icons.arrow_back,
+                size: 28,
+                color: Theme.of(context).colorScheme.surface,
+              )),
+          title: Text(
+            'Create Post',
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.surface),
+          ),
+          actions: [
+            ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10))),
+                    backgroundColor: isHaveContent
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.3)),
+                onPressed: () => isHaveContent ? createPost() : null,
+                child: Text(
+                  'post',
+                  style: TextStyle(
+                      fontSize: 18,
+                      color: isHaveContent
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).colorScheme.onSurface),
+                ))
+          ],
         ),
-        actions: [
-          ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10))),
-                  backgroundColor: isHaveContent
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.3)),
-              onPressed: () => isHaveContent ? createPost() : null,
-              child: Text(
-                'post',
-                style: TextStyle(
-                    fontSize: 18,
-                    color: isHaveContent
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : Theme.of(context).colorScheme.onSurface),
-              ))
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: GestureDetector(
-          onTap: FocusScope.of(context).unfocus,
-          child: Column(
-            children: [
-              //Avatar and name
-              Row(
-                children: [
-                  Avatar(
-                    height_width: 0.15,
-                    user: widget.currentUser,
-                  ),
-                  const SizedBox(
-                    width: 15,
-                  ),
-                  Text(
-                    widget.currentUser!.userName,
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.surface),
-                  ),
-                ],
-              ),
-              // input content
-              Expanded(child: _inputContent(context)),
-              //other select
-              _otherSelect(context)
-            ],
+        body: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: GestureDetector(
+            onTap: FocusScope.of(context).unfocus,
+            child: Column(
+              children: [
+                //Avatar and name
+                Row(
+                  children: [
+                    Avatar(
+                      height_width: 0.15,
+                      user: widget.currentUser,
+                    ),
+                    const SizedBox(
+                      width: 15,
+                    ),
+                    Text(
+                      widget.currentUser!.userName,
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.surface),
+                    ),
+                  ],
+                ),
+                // input content
+                Expanded(child: _inputContent(context)),
+                //other select
+                _otherSelect(context)
+              ],
+            ),
           ),
         ),
       ),
@@ -195,12 +199,13 @@ class _CreatepostscreenState extends State<Createpostscreen> {
   Widget _otherSelect(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      height: MediaQuery.of(context).size.height * 0.1 + 10,
+      height: MediaQuery.of(context).size.height * 0.1 + 21,
       margin: EdgeInsets.only(
           bottom: isVisibilityKeyBoard
               ? MediaQuery.of(context).viewInsets.bottom
               : 0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Row(
             children: [

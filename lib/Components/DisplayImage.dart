@@ -1,7 +1,7 @@
-import 'package:chat_app/Config/Avatar.dart';
+import 'package:chat_app/Components/Avatar.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../Authentication/Domains/Entity/User.dart';
+import '../Authentication/Domains/Entity/User.dart';
 
 // ignore: must_be_immutable
 class DisplayImage extends StatelessWidget {

@@ -1,4 +1,5 @@
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
+import 'package:chat_app/Components/CircleProgressIndicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,6 +14,8 @@ class _RegisterState extends State<Register> {
   final _formKey = GlobalKey<FormState>();
   bool isLoading = false;
   bool isFieldEmpty = false;
+  bool passVisible = true;
+  bool confirmPassVisible = true;
 
   TextEditingController nameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
@@ -21,6 +24,18 @@ class _RegisterState extends State<Register> {
 
   void backBtn() {
     Navigator.pop(context);
+  }
+
+  void passVisibleBtn() {
+    setState(() {
+      passVisible = !passVisible;
+    });
+  }
+
+  void confirmPassVisibleBtn() {
+    setState(() {
+      confirmPassVisible = !confirmPassVisible;
+    });
   }
 
   void tapToRegister() async {
@@ -160,22 +175,48 @@ class _RegisterState extends State<Register> {
                   child: Column(
                     children: [
                       formField(nameController, 'Your name',
-                          (value) => validatedName(value)),
+                          (value) => validatedName(value), false, null),
                       const SizedBox(
                         height: 20,
                       ),
                       formField(emailController, 'Your email',
-                          (value) => validatedEmail(value)),
+                          (value) => validatedEmail(value), false, null),
                       const SizedBox(
                         height: 20,
                       ),
-                      formField(passController, 'Password',
-                          (value) => validatedPass(value)),
+                      formField(
+                          passController,
+                          'Password',
+                          (value) => validatedPass(value),
+                          passVisible,
+                          Icon(
+                            passVisible
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            size: 22,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.5),
+                          )),
                       const SizedBox(
                         height: 20,
                       ),
-                      formField(ConfirmPassController, 'Confirm Password',
-                          (value) => validatedConfirmpass(value))
+                      formField(
+                          ConfirmPassController,
+                          'Confirm Password',
+                          (value) => validatedConfirmpass(value),
+                          confirmPassVisible,
+                          Icon(
+                            confirmPassVisible
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            size: 22,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.5),
+                          ))
                     ],
                   )),
               //Btn
@@ -195,7 +236,9 @@ class _RegisterState extends State<Register> {
                       borderRadius:
                           const BorderRadius.all(Radius.circular(15))),
                   child: isLoading
-                      ? CircularProgressIndicator()
+                      ? Loading(
+                          height_width: 0.08,
+                          color: Theme.of(context).colorScheme.primaryContainer)
                       : Text(
                           'Create an account',
                           style: TextStyle(
@@ -215,7 +258,7 @@ class _RegisterState extends State<Register> {
   }
 
   Widget formField(TextEditingController _controller, String nameField,
-      Function(String?) validated) {
+      Function(String?) validated, bool isVisible, Widget? suffixIcon) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -229,7 +272,9 @@ class _RegisterState extends State<Register> {
         TextFormField(
           controller: _controller,
           validator: (value) => validated(value),
+          obscureText: isVisible,
           decoration: InputDecoration(
+              suffixIcon: suffixIcon,
               contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
               enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(

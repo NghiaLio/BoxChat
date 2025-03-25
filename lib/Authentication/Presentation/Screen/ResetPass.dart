@@ -1,5 +1,5 @@
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
-import 'package:chat_app/Config/TopSnackBar.dart';
+import 'package:chat_app/Components/TopSnackBar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
