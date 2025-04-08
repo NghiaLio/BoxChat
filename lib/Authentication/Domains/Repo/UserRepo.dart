@@ -7,4 +7,5 @@ abstract class UserRepo{
   Future<void> updateOnline(bool isOnline);
   Future<UserApp?> getCurrentUser();
   Future<String?> resetPassword(String email);
+  Future<void> getFirebaseMessagingToken();
 }

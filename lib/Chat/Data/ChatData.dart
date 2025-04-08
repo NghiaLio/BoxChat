@@ -1,9 +1,16 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
 import 'package:chat_app/Chat/Domain/Repo/ChatRepo.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../config/get_service_key.dart';
 import '../Domain/Models/ChatRoom.dart';
 import '../Domain/Models/Message.dart';
+import 'package:http/http.dart' as http;
 
 class ChatData implements ChatRepo {
   final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
@@ -20,6 +27,24 @@ class ChatData implements ChatRepo {
     UserApp user =
         await UserRef.doc(ID).get().then((snapshot) => snapshot.data()!);
     return user;
+  }
+
+  @override
+  Future<List<UserApp>?> getAllUser() async {
+    try {
+      final List<UserApp>? listUser = await _firebaseFirestore
+          .collection('UserData')
+          .where('id', isNotEqualTo: _firebaseAuth.currentUser!.uid)
+          .get()
+          .then((value) =>
+              value.docs.map((e) => UserApp.fromJson(e.data())).toList())
+          .catchError((onError) => throw onError);
+      return listUser;
+    } catch (e) {
+      // throw Exception(e);
+      print(e);
+      return null;
+    }
   }
 
   @override
@@ -57,6 +82,16 @@ class ChatData implements ChatRepo {
   }
 
   @override
+  Future<void> deleteChatRoom(String chatID) async {
+    try {
+      await _firebaseFirestore.collection('Chats').doc(chatID).delete();
+    } catch (e) {
+      print((e));
+      throw Exception(e);
+    }
+  }
+
+  @override
   Stream<QuerySnapshot<Map<String, dynamic>>> getAllChat() {
     return _firebaseFirestore
         .collection('Chats')
@@ -77,15 +112,99 @@ class ChatData implements ChatRepo {
   }
 
   @override
-  Future<void> sendMessage(Message mess, String ID2) async {
+  Future<void> sendMessage(
+      UserApp currentUser, UserApp receiveUser, Message mess) async {
     try {
-      final genID = [_firebaseAuth.currentUser!.uid, ID2];
+      final genID = [_firebaseAuth.currentUser!.uid, receiveUser.id];
       genID.sort();
       final String chatID = genID.join('_');
       await _firebaseFirestore.collection('Chats').doc(chatID).update({
         'listMessage': FieldValue.arrayUnion([mess.toMap()])
+      }).then((value) {
+        if (mess.type == MessageType.Image) {
+          sendPushNotification(currentUser, receiveUser, 'Sent a Image');
+        } else if (mess.type == MessageType.Audio) {
+          sendPushNotification(currentUser, receiveUser, 'Sent a Audio');
+        } else if (mess.type == MessageType.Video) {
+          sendPushNotification(currentUser, receiveUser, 'Sent a Video');
+        } else {
+          sendPushNotification(currentUser, receiveUser, mess.content);
+        }
       });
     } catch (e) {
+      throw Exception(e);
+    }
+  }
+
+  Future<String> getAccessToken() async {
+    GetServerKey getServerKey = GetServerKey();
+    String accessToken = await getServerKey.getServiceKeyToken();
+    return accessToken;
+  }
+
+  @override
+  Future<void> sendPushNotification(
+      UserApp currentUser, UserApp receiveUser, String message) async {
+    try {
+      // ben nhan co cho phep nhan thong bao hay khong tu ben gui hay ko
+      final bool isEnableNotify =
+          receiveUser.EnableNotify!.contains(currentUser.id);
+      if (!isEnableNotify) {
+        return;
+      }
+
+      final String keyServer = await getAccessToken();
+      final body = {
+        "message": {
+          "token": receiveUser.pushToken!,
+          "notification": {"body": message, "title": receiveUser.userName},
+          "data": {"senderID":currentUser.id},
+        }
+      };
+      var headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $keyServer'
+      };
+      final response = await http.post(
+          Uri.parse(dotenv.env['URL_SEND_NOTIFICATION']!),
+          headers: headers,
+          body: jsonEncode(body));
+      print(keyServer);
+      print("response status: ${response.statusCode}");
+      print("response body: ${response.body}");
+    } catch (e) {
+      print(e.toString());
+      throw Exception(e);
+    }
+  }
+
+  @override
+  Future<void> allowNotify(String idUser) async {
+    // luu id , ko luu token
+    try {
+      await _firebaseFirestore
+          .collection('UserData')
+          .doc(_firebaseAuth.currentUser!.uid)
+          .update({
+        'EnableNotify': FieldValue.arrayUnion([idUser])
+      });
+    } catch (e) {
+      print((e));
+      throw Exception(e);
+    }
+  }
+
+  @override
+  Future<void> refuseNotify(String idUser) async {
+    try {
+      await _firebaseFirestore
+          .collection('UserData')
+          .doc(_firebaseAuth.currentUser!.uid)
+          .update({
+        'EnableNotify': FieldValue.arrayRemove([idUser])
+      });
+    } catch (e) {
+      print((e));
       throw Exception(e);
     }
   }
@@ -184,7 +303,7 @@ class ChatData implements ChatRepo {
   }
 
   @override
-  Future<void> deleteMessage(String ID2, Timestamp time) async{
+  Future<void> deleteMessage(String ID2, Timestamp time) async {
     try {
       final genID = [_firebaseAuth.currentUser!.uid, ID2];
       genID.sort();
@@ -198,7 +317,8 @@ class ChatData implements ChatRepo {
         return ChatRoom.fromJson(snapshot.data()!).listMessage;
       });
       //delete mess
-      final List<Message> listNew = listMess.where((mess) => mess.sendAt != time).toList();
+      final List<Message> listNew =
+          listMess.where((mess) => mess.sendAt != time).toList();
       //save to cloud_firestore
       await _firebaseFirestore.collection('Chats').doc(chatID).update(
           {'listMessage': listNew.map((mess) => mess.toMap()).toList()});

@@ -15,13 +15,27 @@ import '../../Domain/Entities/post.dart';
 class Socialcubits extends Cubit<Socialstate> {
   final SocialRepo socialRepo;
   Socialcubits({required this.socialRepo}) : super(initialSocialState());
+  List<UserApp>? _listUser;
+
+  List<UserApp>? get listUser => _listUser;
+
+  //get all user
+  Future<List<UserApp>?> getAllUser(String currentUserID) async {
+    try {
+      final List<UserApp>? listUserData = await socialRepo.getAllUser(currentUserID);
+      _listUser = listUserData;
+      return listUser;
+    } catch (e) {
+      throw Exception(e);
+    }
+  }
 
   //check image in storage of supabase
-  Future<bool> checkImage(String nameImage, String currentUserID) async {
+  Future<bool> checkImage(String nameImage, String currentUserID, String nameStorage) async {
     try {
       final String pathStorage = '$currentUserID/';
       final listFiles = await Supabase.instance.client.storage
-          .from('post')
+          .from(nameStorage)
           .list(path: pathStorage);
       final x = listFiles.any((file) => file.name == nameImage);
       return x;
@@ -33,11 +47,11 @@ class Socialcubits extends Cubit<Socialstate> {
 
   // upload image to storage of supabase
   Future<void> uploadImage(
-      String nameImage, String currentUserID, File file) async {
+      String nameImage, String currentUserID, File file, String nameStorage) async {
     try {
       final String pathStorage = '$currentUserID/$nameImage';
       await Supabase.instance.client.storage
-          .from('post')
+          .from(nameStorage)
           .upload(pathStorage, file);
     } catch (e) {
       throw Exception(e);
@@ -45,11 +59,11 @@ class Socialcubits extends Cubit<Socialstate> {
   }
 
   //get imageURL from storage of supabase
-  Future<String> getImageUrl(String nameImage, String currentUserID) async {
+  Future<String> getImageUrl(String nameImage, String currentUserID, String nameStorage) async {
     try {
       final String pathStorage = '$currentUserID/$nameImage';
       final url = Supabase.instance.client.storage
-          .from('post')
+          .from(nameStorage)
           .getPublicUrl(pathStorage);
       return url;
     } catch (e) {
@@ -63,11 +77,11 @@ class Socialcubits extends Cubit<Socialstate> {
     // ignore: unused_local_variable
     String imageUrl = '';
     if (image != null) {
-      final bool isExistImage = await checkImage(image, user!.id);
+      final bool isExistImage = await checkImage(image, user!.id, 'post');
       if (!isExistImage) {
-        await uploadImage(image, user.id, file!);
+        await uploadImage(image, user.id, file!,'post');
       }
-      imageUrl = await getImageUrl(image, user.id);
+      imageUrl = await getImageUrl(image, user.id, 'post');
     }
     final Posts post = Posts(
         content: content,
@@ -92,8 +106,10 @@ class Socialcubits extends Cubit<Socialstate> {
           List<Likes> listLike = await getAllLikeForPost(listPost[i].id!);
           List<Comments> listComments =
               await getAllCommentForPost(listPost[i].id!);
+          List<Comments> listAnswerOfComments = listComments.where((cmt)=>cmt.answerComment != null).toList();
+          
           listPost[i] = listPost[i]
-              .copyWith(listLikes: listLike, listComments: listComments);
+              .copyWith(listLikes: listLike, listComments: listComments, listAnswerOfComments: listAnswerOfComments);
         }
 
         emit(loadedPost(listPost));
@@ -156,10 +172,23 @@ class Socialcubits extends Cubit<Socialstate> {
   //comment
   Future<void> comment(Comments cmt) async {
     try {
+      if(cmt.imageCmtUrl!.isEmpty){
+        
+      }
       await socialRepo.comment(cmt);
       getAllPost(false);
     } catch (e) {
       throw Exception(e);
     }
   }
+
+  //deleteComment
+  Future<void> deleteComment(int commentID) async{
+    try {
+      await socialRepo.deleteComment(commentID);
+    } catch (e) {
+      throw Exception(e);
+    }
+  }
+
 }

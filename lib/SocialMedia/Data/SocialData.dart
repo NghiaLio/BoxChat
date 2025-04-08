@@ -1,13 +1,32 @@
+import 'package:chat_app/Authentication/Domains/Entity/User.dart';
 import 'package:chat_app/SocialMedia/Domain/Entities/comment.dart';
 import 'package:chat_app/SocialMedia/Domain/Entities/likes.dart';
 import 'package:chat_app/SocialMedia/Domain/Entities/post.dart';
 import 'package:chat_app/SocialMedia/Domain/Repo/SocialRepo.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Socialdata implements SocialRepo {
+  FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
   final databasePost = Supabase.instance.client.from('social_post');
   final databaseLike = Supabase.instance.client.from('likes');
   final databaseComment = Supabase.instance.client.from('comments');
+
+  @override
+  Future<List<UserApp>?> getAllUser(String currentUserID) async {
+    try {
+      final List<UserApp>? listUser = await _firebaseFirestore
+          .collection('UserData')
+          .where('id', isNotEqualTo: currentUserID)
+          .get()
+          .then((value) =>
+              value.docs.map((e) => UserApp.fromJson(e.data())).toList())
+          .catchError((onError)=> throw onError);
+      return listUser;
+    } catch (e) {
+      throw Exception(e);
+    }
+  }
 
   @override
   Future<void> createPost(Posts post) async {
@@ -57,8 +76,7 @@ class Socialdata implements SocialRepo {
   }
 
   @override
-  Future<void> deleteComment(String userID, int postID) {
-    // TODO: implement deleteComment
-    throw UnimplementedError();
+  Future<void> deleteComment(int commentID) async{
+    await databaseComment.delete().eq('id', commentID);
   }
 }

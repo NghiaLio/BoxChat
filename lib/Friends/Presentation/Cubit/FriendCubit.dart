@@ -58,6 +58,11 @@ class Friendcubit extends Cubit<Friendstate> {
     await friendsRepo.deleteRequired(ID_UserRequired);
   }
 
+  //revoke request
+  Future<void> revokeRequest(String ID_FriendRequest) async {
+    await friendsRepo.revokeFriendRequest(ID_FriendRequest);
+  }
+
   //confirmFriends
   Future<void> confirmFriends(String ID_UserRequired) async {
     await friendsRepo.confirmFriends(ID_UserRequired);

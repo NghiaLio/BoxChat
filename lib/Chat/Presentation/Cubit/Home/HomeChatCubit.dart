@@ -6,15 +6,33 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeChatCubit extends Cubit<HomeChatState> {
-  final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
+ 
 
   HomeChatCubit({required this.chatRepo}) : super(initialChat());
 
   final ChatRepo chatRepo;
 
   List<UserApp>? _listFriends;
+  List<UserApp>? _listUsers;
 
-  List<UserApp>? get listUser => _listFriends;
+  List<UserApp>? get listFriends => _listFriends;
+  List<UserApp>? get listUsers => _listUsers;
+
+  
+
+
+  //getAllUser
+  Future<List<UserApp>?> getAllUsers() async{
+    emit(loading());
+    try {
+      final List<UserApp>? listParse = await chatRepo.getAllUser();
+      _listUsers = listParse;
+      emit(getUserSuccess(listFriends: [], listChat: [], listUsers: listParse));
+    } catch (e) {
+      emit(onError(e.toString()));
+    }
+    return null;
+  }
 
   //getAllFriends
   Future<List<UserApp?>?> getListFriends() async {
@@ -37,10 +55,10 @@ class HomeChatCubit extends Cubit<HomeChatState> {
           _listFriends = parseList;
           if (state is getUserSuccess) {
             final currentState = state as getUserSuccess;
-            emit(currentState.copyWith(listUser: parseList));
+            emit(currentState.copyWith(listFriends: parseList));
           } else {
             //fisrt initial
-            emit(getUserSuccess(listUser: parseList, listChat: []));
+            emit(getUserSuccess(listFriends: parseList, listChat: [], listUsers: []));
           }
         }
       }, onError: (error) {
@@ -80,7 +98,7 @@ class HomeChatCubit extends Cubit<HomeChatState> {
           final currentState = state as getUserSuccess;
           emit(currentState.copyWith(listChat: parseList));
         } else {
-          emit(getUserSuccess(listUser: [], listChat: parseList));
+          emit(getUserSuccess(listFriends: [], listChat: parseList, listUsers: []));
         }
       }, onError: (error) {
         emit(onError(error.toString()));
@@ -93,6 +111,15 @@ class HomeChatCubit extends Cubit<HomeChatState> {
 
   //delete chat room
   Future<void> deleteChatRoom(String chatID) async {
-    return _firebaseFirestore.collection('Chats').doc(chatID).delete();
+    await chatRepo.deleteChatRoom(chatID);
+  }
+
+  //allowNotify
+  Future<void> allowNotify(String newToken) async{
+    await chatRepo.allowNotify(newToken);
+  }
+  //refuseNotify
+  Future<void> refuseNotify(String token) async{
+    await chatRepo.refuseNotify(token);
   }
 }

@@ -1,5 +1,6 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, must_be_immutable, depend_on_referenced_packages
 
+import 'dart:async';
 import 'dart:io';
 
 // ignore: unused_import
@@ -9,10 +10,14 @@ import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Chat/Domain/Models/ChatRoom.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/DisplayMessage/DisplayCubit.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/DisplayMessage/DisplayState.dart';
+import 'package:chat_app/Chat/Presentation/Screen/HomeScreen.dart';
 import 'package:chat_app/Components/Avatar.dart';
 import 'package:chat_app/Components/PlaceHolder.dart';
 import 'package:chat_app/Components/TopSnackBar.dart';
-import 'package:chat_app/Components/timePost.dart';
+import 'package:chat_app/Components/itemBarAudio.dart';
+import 'package:chat_app/Components/itemMessImage.dart';
+import 'package:chat_app/Components/itemMessVideo.dart';
+import 'package:chat_app/config/timePost.dart';
 import 'package:chat_app/Person/Presentation/Screen/Profile.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,14 +25,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:record/record.dart';
 
+import '../../../Components/itemMessAudio.dart';
+import '../../../Components/itemMessText.dart';
 import '../../Domain/Models/Message.dart';
-import '../../../Components/DisplayImage.dart';
+import '../../../Components/DisplayFile.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 class ChatScreen extends StatefulWidget {
   final ChatRoom? chat;
   final UserApp? user;
-  ChatScreen({super.key, this.chat, this.user});
+  bool isFromHome;
+  ChatScreen({super.key, this.chat, this.user,required this.isFromHome});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -36,11 +48,26 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   UserApp? currentUser, receiveUser;
   bool isShowBottomBar = false;
+  bool isRecoding = false;
+  Duration _duration = Duration.zero;
+  Timer? _timer;
+  final AudioRecorder _recorder = AudioRecorder();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  String pathRec = '';
   ScrollController _scrollController = ScrollController();
   List<bool>? isSelected;
 
   bool isReplying = false;
   Map replyingTo = {};
+
+  void backButon() {
+    cancleRecord();
+    if(!widget.isFromHome){
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (c)=>HomeScreen()));
+    }
+    Navigator.pop(context);
+  }
 
   void openBottomBar(int indexMessage) {
     setState(() {
@@ -87,58 +114,83 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  void displayImage(String urlImage, UserApp userOfImage) {
+  void displayFile(String urlImage, UserApp userOfImage, MessageType type) {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => DisplayImage(
-                  urlImage: urlImage,
-                  userOfImage: userOfImage,
+            builder: (context) => DisplayFile(
+                  urlFile: urlImage,
+                  type: type,
+                  userOfFile: userOfImage,
                 )));
   }
 
-  void saveImageToCloudStore(XFile image) async {
+  void saveFileToCloudStore(XFile file, MessageType messType) async {
     final ID = [currentUser!.id, receiveUser!.id];
     ID.sort();
     final String chatID = ID.join('_');
     //get image url
     final String image_url =
-        await context.read<DisplayCubit>().getImageUrl(image.name, chatID);
+        await context.read<DisplayCubit>().getImageUrl(file.name, chatID);
     //save to cloud_firestore
     final Message mess = Message(
         senderID: currentUser!.id,
         content: image_url,
-        type: MessageType.Image,
+        type: messType,
         sendAt: Timestamp.fromDate(DateTime.now()),
         seen: false,
         tail: true);
-    await context.read<DisplayCubit>().sendMess(mess, receiveUser!.id);
+    await context.read<DisplayCubit>().sendMess(currentUser!,receiveUser!,mess);
     await context.read<DisplayCubit>().unTailMess(receiveUser!.id);
   }
 
-  Future pickImage(String receiveID, String currentID) async {
-    final ID = [currentID, receiveID];
+  void processFilePicked(XFile? file, MessageType messType) async {
+    final ID = [currentUser!.id, receiveUser!.id];
     ID.sort();
     final String chatID = ID.join('_');
+    if (file == null) return;
+    //upload image to storage
+    //check image
+    final bool isExist =
+        await context.read<DisplayCubit>().checkImage(file.name, chatID);
+    if (isExist) {
+      saveFileToCloudStore(file, messType);
+    } else {
+      //upload
+      await context
+          .read<DisplayCubit>()
+          .uploadImage(file.name, File(file.path), chatID);
+      //save
+      saveFileToCloudStore(file, messType);
+    }
+  }
+
+  Future pickImage() async {
     try {
       //selected image from gallery
       final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (image == null) return;
-      //upload image to storage
-      //check image
-      final bool isExist =
-          await context.read<DisplayCubit>().checkImage(image.name, chatID);
-      if (isExist) {
-        saveImageToCloudStore(image);
-      } else {
-        //upload
-        await context
-            .read<DisplayCubit>()
-            .uploadImage(image.name, File(image.path), chatID);
-        //save
-        saveImageToCloudStore(image);
-      }
-      // print(isExist);
+      processFilePicked(image, MessageType.Image);
+    } on PlatformException catch (e) {
+      print(e);
+      return;
+    }
+  }
+
+  Future pickImageByCamera() async {
+    try {
+      //selected image from camera
+      final image = await ImagePicker().pickImage(source: ImageSource.camera);
+      processFilePicked(image, MessageType.Image);
+    } on PlatformException catch (e) {
+      print(e);
+      return;
+    }
+  }
+
+  Future pickVideo() async {
+    try {
+      final video = await ImagePicker().pickVideo(source: ImageSource.gallery);
+      processFilePicked(video, MessageType.Video);
     } on PlatformException catch (e) {
       print(e);
       return;
@@ -156,7 +208,7 @@ class _ChatScreenState extends State<ChatScreen> {
         tail: true,
         replyingTo: replying);
     cancleReply();
-    await context.read<DisplayCubit>().sendMess(mess, receiveUser!.id);
+    await context.read<DisplayCubit>().sendMess(currentUser!,receiveUser!,mess);
     await context.read<DisplayCubit>().unTailMess(receiveUser!.id);
   }
 
@@ -214,6 +266,126 @@ class _ChatScreenState extends State<ChatScreen> {
     showSnackBar.show_error('Not support', context);
   }
 
+  List<PopupMenuEntry> listAction = const [
+    PopupMenuItem(
+      value: 'Camera',
+      child: Row(
+        children: [
+          Icon(Icons.camera_alt),
+          const SizedBox(
+            width: 10,
+          ),
+          Text('Camera')
+        ],
+      ),
+    ),
+    PopupMenuItem(
+      value: 'Audio',
+      child: Row(
+        children: [
+          Icon(Icons.mic),
+          SizedBox(
+            width: 10,
+          ),
+          Text('Audio')
+        ],
+      ),
+    ),
+    PopupMenuItem(
+      value: 'Video',
+      child: Row(
+        children: [
+          Icon(Icons.video_collection_sharp),
+          SizedBox(
+            width: 10,
+          ),
+          Text('Video')
+        ],
+      ),
+    ),
+  ];
+
+  void moreAction(Object? value) {
+    if (value == null) {
+      showSnackBar.show_error('Not support', context);
+    } else if (value == 'Camera') {
+      pickImageByCamera();
+    } else if (value == 'Audio') {
+      setState(() {
+        isRecoding = true;
+      });
+      _startRecording();
+    } else {
+      pickVideo();
+    }
+  }
+
+  Future<void> _startRecording() async {
+    print('object');
+    try {
+      if (await _recorder.hasPermission()) {
+        final Directory appDir = await getApplicationDocumentsDirectory();
+        final String filePath = path.join(
+            appDir.path, 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a');
+        _recorder.start(const RecordConfig(), path: filePath);
+        setState(() {
+          isRecoding = true;
+          _duration = Duration.zero;
+        });
+
+        _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+          setState(() {
+            _duration += Duration(seconds: 1);
+          });
+        });
+      }
+    } catch (e) {
+      print("Error starting recording: $e");
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    try {
+      final pathRecord = await _recorder.stop();
+      setState(() {
+        pathRec = pathRecord!;
+        _timer?.cancel();
+      });
+      print(pathRec);
+      //playAudio(pathRec);
+      await _audioPlayer.setFilePath(pathRec);
+      await _audioPlayer.play();
+    } catch (e) {
+      print("Error stopping recording: $e");
+    }
+  }
+
+  String formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    return "${twoDigits(duration.inMinutes)}:${twoDigits(duration.inSeconds.remainder(60))}";
+  }
+
+  void cancleRecord() async {
+    _timer?.cancel();
+    _audioPlayer.dispose();
+    setState(() {
+      _duration = Duration.zero;
+      pathRec = '';
+      isRecoding = false;
+    });
+    print('path ' + pathRec);
+  }
+
+  void confirmRecord() async {
+    processFilePicked(XFile(pathRec), MessageType.Audio);
+    setState(() {
+      isRecoding = false;
+      pathRec = '';
+      _duration = Duration.zero;
+    });
+  }
+
+  
   @override
   void initState() {
     currentUser = context.read<AuthCubit>().userData;
@@ -243,7 +415,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         children: [
                           //back button
                           IconButton(
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: backButon,
                               icon: Icon(
                                 Icons.arrow_back,
                                 size: 28,
@@ -335,24 +507,13 @@ class _ChatScreenState extends State<ChatScreen> {
                         ],
                       ),
                       //action
-                      Row(
-                        children: [
-                          IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Icons.phone,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 28,
-                              )),
-                          IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Icons.video_call,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 28,
-                              )),
-                        ],
-                      )
+                      IconButton(
+                          onPressed: () => moreAction(null),
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 28,
+                          )),
                     ],
                   ),
                 ),
@@ -371,6 +532,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: PlaceHolder(),
                     );
                   } else if (state is loadedMessage) {
+                    //khi tin nhan moi den ma van ben trong man hinh tro chuyen thi tin nhan se cap nhat da seen
+                    context.read<DisplayCubit>().seenMess(receiveUser!.id);
                     final List<Message> listMess = state.listMessage ?? [];
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (_scrollController.hasClients) {
@@ -401,42 +564,50 @@ class _ChatScreenState extends State<ChatScreen> {
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 ),
                 //input text
-                MessageBar(
-                  onSend: (content) => sendMessage(content, replyingTo),
-                  replying: isReplying,
-                  onTapCloseReply: cancleReply,
-                  replyingTo: replyingTo.isEmpty ? '' : replyingTo['message'],
-                  sendButtonColor: Theme.of(context).colorScheme.primary,
-                  messageBarColor: Theme.of(context).scaffoldBackgroundColor,
-                  textFieldTextStyle: TextStyle(
-                      fontSize: 17,
-                      color: Theme.of(context).colorScheme.surface),
-                  actions: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-                      child: GestureDetector(
-                        onTap: null,
-                        child: Icon(
-                          Icons.add,
-                          size: 30,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: GestureDetector(
-                        onTap: () =>
-                            pickImage(receiveUser!.id, currentUser!.id),
-                        child: Icon(
-                          Icons.image,
-                          size: 28,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                )
+                !isRecoding
+                    ? MessageBar(
+                        onSend: (content) => sendMessage(content, replyingTo),
+                        replying: isReplying,
+                        onTapCloseReply: cancleReply,
+                        replyingTo:
+                            replyingTo.isEmpty ? '' : replyingTo['message'],
+                        sendButtonColor: Theme.of(context).colorScheme.primary,
+                        messageBarColor:
+                            Theme.of(context).scaffoldBackgroundColor,
+                        textFieldTextStyle: TextStyle(
+                            fontSize: 17,
+                            color: Theme.of(context).colorScheme.surface),
+                        actions: [
+                          PopupMenuButton(
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer,
+                            icon: Icon(
+                              Icons.add,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            onSelected: (value) => moreAction(value),
+                            itemBuilder: (context) => listAction,
+                          ),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: GestureDetector(
+                              onTap: () => pickImage(),
+                              child: Icon(
+                                Icons.image,
+                                size: 28,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : itemBarAudio(
+                        textTime: formatDuration(_duration),
+                        cancleRecord: () => cancleRecord(),
+                        stopRecord: () => _stopRecording(),
+                        confirmRecord: () => confirmRecord(),
+                      )
               ],
             ),
           ),
@@ -482,139 +653,53 @@ class _ChatScreenState extends State<ChatScreen> {
             crossAxisAlignment:
                 isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
-              Transform.scale(
-                scale: indexSelected == indexMessage ? 1.2 : 1,
-                child: GestureDetector(
-                  onLongPress: () => openBottomBar(indexMessage),
-                  child: message.type.name == 'Text'
-                      ? Column(
-                          crossAxisAlignment: isSender
-                              ? CrossAxisAlignment.end
-                              : CrossAxisAlignment.start,
-                          children: [
-                            message.replyingTo!.isNotEmpty
-                                ? Padding(
-                                    padding: const EdgeInsets.only(
-                                        bottom: 5.0, right: 20, left: 20),
-                                    child: Column(
-                                      crossAxisAlignment: isSender
-                                          ? CrossAxisAlignment.end
-                                          : CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.reply,
-                                              size: 18,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface,
-                                            ),
-                                            Text(
-                                              getNameReply(message
-                                                  .replyingTo!['senderID']),
-                                              style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .surface
-                                                      .withOpacity(0.8),
-                                                  fontWeight: FontWeight.w400),
-                                            )
-                                          ],
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.all(8.0),
-                                          decoration: BoxDecoration(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primaryContainer,
-                                              borderRadius:
-                                                  BorderRadius.circular(10)),
-                                          child: !message.replyingTo!
-                                                  .containsKey('link')
-                                              ? Text(
-                                                  message
-                                                      .replyingTo!['message'],
-                                                  style: TextStyle(
-                                                      fontSize: 16,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .surface
-                                                          .withOpacity(0.8),
-                                                      fontWeight:
-                                                          FontWeight.w400),
-                                                )
-                                              : GestureDetector(
-                                                  onTap: moveToImage,
-                                                  child: Opacity(
-                                                    opacity: 0.5,
-                                                    child: SizedBox(
-                                                      width:
-                                                          MediaQuery.of(context)
-                                                                  .size
-                                                                  .width *
-                                                              0.4,
-                                                      child: CacheImage(
-                                                          imageUrl: message
-                                                                  .replyingTo![
-                                                              'link'],
-                                                          widthPlachoder:
-                                                              MediaQuery.of(
-                                                                          context)
-                                                                      .size
-                                                                      .width *
-                                                                  0.4,
-                                                          heightPlachoder:
-                                                              MediaQuery.of(
-                                                                          context)
-                                                                      .size
-                                                                      .width *
-                                                                  0.4),
-                                                    ),
-                                                  ),
-                                                ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : Container(),
-                            BubbleSpecialThree(
-                              seen: message.seen,
-                              tail: message.tail,
-                              text: message.content,
-                              color: isSender
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .secondaryContainer,
-                              textStyle: TextStyle(
-                                  fontSize: 18,
-                                  color: Theme.of(context).colorScheme.surface,
-                                  fontWeight: FontWeight.w400),
-                              isSender: isSender,
-                              // seen: true,
-                            ),
-                          ],
-                        )
-                      : SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.5,
-                          child: BubbleNormalImage(
-                            seen: message.seen,
-                            tail: message.tail,
-                            id: message.content,
-                            onTap: () => displayImage(message.content,
-                                isSender ? currentUser! : receiveUser!),
-                            onLongPress: null,
-                            image: CacheImage(
-                                imageUrl: message.content,
-                                widthPlachoder: 0.6,
-                                heightPlachoder: 0.4),
-                            isSender: isSender,
-                          ),
-                        ),
+              if (message.type == MessageType.Text)
+                Transform.scale(
+                  scale: indexSelected == indexMessage ? 1.2 : 1,
+                  child: GestureDetector(
+                      onLongPress: () => openBottomBar(indexMessage),
+                      child: itemMessText(
+                        message: message,
+                        isSender: isSender,
+                        getNameReply: getNameReply,
+                        moveToImage: moveToImage,
+                      )),
                 ),
-              ),
+              if (message.type == MessageType.Audio)
+                Transform.scale(
+                  scale: indexSelected == indexMessage ? 1.2 : 1,
+                  child: GestureDetector(
+                    onLongPress: () => openBottomBar(indexMessage),
+                    child: itemMessAudio(
+                      message: message,
+                    ),
+                  ),
+                ),
+              if (message.type == MessageType.Video)
+                Transform.scale(
+                  scale: indexSelected == indexMessage ? 1.2 : 1,
+                  child: GestureDetector(
+                    onLongPress: () => openBottomBar(indexMessage),
+                    child: itemMessVideo(
+                      url: message.content,
+                      userOfFile: isSender ? currentUser : receiveUser,
+                    ),
+                  ),
+                ),
+              if (message.type == MessageType.Image)
+                Transform.scale(
+                  scale: indexSelected == indexMessage ? 1.2 : 1,
+                  child: GestureDetector(
+                    onLongPress: () => openBottomBar(indexMessage),
+                    child: itemMessImage(
+                      message: message,
+                      currentUser: currentUser,
+                      receiveUser: receiveUser,
+                      isSender: isSender,
+                      displayImage: displayFile,
+                    ),
+                  ),
+                ),
               Padding(
                 padding: isSender
                     ? const EdgeInsets.only(right: 8.0)
@@ -644,7 +729,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 bottom: MediaQuery.of(context).viewInsets.bottom + 5)
             : EdgeInsets.zero,
         child: Container(
-          height: MediaQuery.of(context).size.height * 0.09,
+          height: MediaQuery.of(context).size.height * 0.09 + 5,
           width: MediaQuery.of(context).size.width,
           color: Theme.of(context).colorScheme.primaryContainer,
           child: Padding(

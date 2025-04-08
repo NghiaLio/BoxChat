@@ -84,6 +84,18 @@ class _FriendscreenState extends State<FriendScreen> {
     });
   }
 
+  void revokeRequest(UserApp user) async {
+    //smoth UI
+    setState(() {
+      user.requiredAddFriend!.remove(widget.userApp!.id);
+    });
+    await context.read<Friendcubit>().revokeRequest(user.id).catchError((e) {
+      setState(() {
+        user.requiredAddFriend!.add(widget.userApp!.id);
+      });
+    });
+  }
+
   @override
   void initState() {
     context.read<Friendcubit>().fetchData();
@@ -270,6 +282,30 @@ class _FriendscreenState extends State<FriendScreen> {
                             ),
                           ))
                       : Container(),
+                  tab == 'Suggest' && checkContainRequired()
+                      ? PopupMenuButton(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          padding: EdgeInsets.zero,
+                          menuPadding: EdgeInsets.zero,
+                          icon: const Icon(
+                            Icons.more_vert,
+                            size: 24,
+                          ),
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                                value: '',
+                                child: Text(
+                                  'Revock request',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surface),
+                                ))
+                          ],
+                          onSelected: (value) => revokeRequest(user),
+                        )
+                      : Container()
                 ],
               )
             ],

@@ -111,6 +111,20 @@ class FriendData implements FriendsRepo {
   }
 
   @override
+  Future<void> revokeFriendRequest(String ID_FriendRequest) async{
+    try {
+      await _firebaseFirestore
+          .collection('UserData')
+          .doc(ID_FriendRequest)
+          .update({
+        'requiredAddFriend': FieldValue.arrayRemove([_firebaseAuth.currentUser!.uid])
+      });
+    } catch (e) {
+      throw Exception(e);
+    }
+  }
+
+  @override
   Future<void> confirmFriends(String idUserrequired) async {
     try {
       await _firebaseFirestore
@@ -134,11 +148,19 @@ class FriendData implements FriendsRepo {
   @override
   Future<void> unFriends(String idUser)async {
     try {
+      //remove friend from currentUser
       await _firebaseFirestore
           .collection('UserData')
           .doc(_firebaseAuth.currentUser!.uid)
           .update({
         'friends': FieldValue.arrayRemove([idUser]),
+      });
+      //remove friend from otherUser
+      await _firebaseFirestore
+          .collection('UserData')
+          .doc(idUser)
+          .update({
+        'friends': FieldValue.arrayRemove([_firebaseAuth.currentUser!.uid]),
       });
     } catch (e) {
       throw Exception(e);

@@ -1,4 +1,4 @@
-import 'package:chat_app/Components/Navigation/NavigationState.dart';
+import 'package:chat_app/config/Navigation/NavigationState.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class NavigationCubit extends Cubit<NavigationState>{

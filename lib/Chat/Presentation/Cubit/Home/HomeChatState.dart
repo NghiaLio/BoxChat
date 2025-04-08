@@ -8,14 +8,16 @@ class initialChat extends HomeChatState{}
 class loading extends HomeChatState{}
 
 class getUserSuccess extends HomeChatState{
-  final List<UserApp>? listUser;
+  final List<UserApp>? listFriends;
+  final List<UserApp>? listUsers;
   final List<ChatRoom>? listChat;
-  getUserSuccess({required this.listUser, required this.listChat});
+  getUserSuccess({required this.listFriends, required this.listChat, required this.listUsers});
 
-  getUserSuccess copyWith({List<UserApp>? listUser,List<ChatRoom>? listChat}){
+  getUserSuccess copyWith({List<UserApp>? listFriends,List<ChatRoom>? listChat, List<UserApp>? listUsers}){
     return getUserSuccess(
-      listUser: listUser ?? this.listUser,
-      listChat: listChat ?? this.listChat
+      listFriends: listFriends ?? this.listFriends,
+      listChat: listChat ?? this.listChat,
+      listUsers: listUsers ?? this.listUsers
     );
   }
 

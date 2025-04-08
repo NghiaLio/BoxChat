@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:chat_app/Authentication/Domains/Entity/User.dart';
 import 'package:chat_app/Chat/Domain/Models/ChatRoom.dart';
 import 'package:chat_app/Chat/Domain/Models/Message.dart';
 import 'package:chat_app/Chat/Domain/Repo/ChatRepo.dart';
@@ -47,8 +48,8 @@ class DisplayCubit extends Cubit<DisplayState> {
   }
 
   //send Mesage
-  Future<void> sendMess(Message mess, String ID2) async {
-    await chatRepo.sendMessage(mess, ID2);
+  Future<void> sendMess(UserApp currentUser,UserApp receiveUser,Message mess) async {
+    await chatRepo.sendMessage(currentUser,receiveUser,mess);
   }
 
   //upload image to storage of supabase
@@ -94,6 +95,7 @@ class DisplayCubit extends Cubit<DisplayState> {
   //seen message
   Future<void> seenMess(String ID2) async{
     await chatRepo.seenMessage(ID2);
+    print('seen message');
   }
   //set tail = false
   Future<void> unTailMess(String ID2) async{

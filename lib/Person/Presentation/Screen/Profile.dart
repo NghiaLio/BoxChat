@@ -2,12 +2,18 @@
 
 // ignore: unused_import
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Components/AleartDiaglog.dart';
 import 'package:chat_app/Components/Avatar.dart';
+import 'package:chat_app/Components/TopSnackBar.dart';
+import 'package:chat_app/Friends/Presentation/Cubit/FriendCubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../Authentication/Domains/Entity/User.dart';
+import '../../../Chat/Presentation/Cubit/Home/HomeChatCubit.dart';
+import '../../../Chat/Presentation/Screen/ChatScreen.dart';
 
 class Profile extends StatefulWidget {
   UserApp? userInformation;
@@ -20,14 +26,109 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   List<String>? listImage;
+  UserApp? myAccount;
+  bool? isSentAddFriend;
 
   void viewAllPhoto() {
     showDialog(
         context: context, builder: (c) => const dialog(text: 'Not update yet'));
   }
-  // void tapToChat(){
-  //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (c)=>ChatScreen()));
-  // }
+
+  void checkSentAddFriend() {
+    setState(() {
+      if (widget.userInformation!.requiredAddFriend!.contains(myAccount!.id)) {
+        isSentAddFriend = true;
+      } else {
+        isSentAddFriend = false;
+      }
+    });
+    print(isSentAddFriend);
+  }
+
+  bool checkFriend() {
+    if (myAccount!.friends!.contains(widget.userInformation!.id)) {
+      return true;
+    }
+    return false;
+  }
+
+  //openChat
+  void tapToChat() async {
+    //check chat exits
+    final bool chatExists = await context
+        .read<HomeChatCubit>()
+        .checkChat(widget.userInformation!.id);
+    if (chatExists) {
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (c) => ChatScreen(
+                    user: widget.userInformation,
+                    isFromHome: false,
+                  )));
+      return;
+    }
+    final ChatRoom = await context
+        .read<HomeChatCubit>()
+        .createChat(widget.userInformation!.id);
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (c) => ChatScreen(
+                  user: widget.userInformation,
+                  chat: ChatRoom,
+                  isFromHome: false,
+                )));
+  }
+
+  void selectOption() async {
+    //trường hợp gửi lời mời
+    if (isSentAddFriend!) {
+      setState(() {
+        isSentAddFriend = false;
+      });
+      await context
+          .read<Friendcubit>()
+          .revokeRequest(widget.userInformation!.id)
+          .catchError((onError) {
+        setState(() {
+          isSentAddFriend = true;
+        });
+      });
+    }
+    //trường hợp không gửi lời mời thì không thực hiện hàm này
+    //trường hợp là bạn bè
+    else {
+      //smoth UI
+      setState(() {
+        myAccount!.friends!.remove(widget.userInformation!.id);
+      });
+      await context
+          .read<Friendcubit>()
+          .unFriends(widget.userInformation!.id)
+          .catchError((onError) {
+        setState(() {
+          myAccount!.friends!.add(widget.userInformation!.id);
+        });
+      });
+    }
+  }
+
+  Future<void> tapToAddFriend() async {
+    //smoth UI
+    setState(() {
+      isSentAddFriend = true;
+    });
+    //
+    await context
+        .read<Friendcubit>()
+        .addFriends(widget.userInformation!.id)
+        .catchError((onError) {
+      setState(() {
+        isSentAddFriend = false;
+      });
+    });
+  }
 
   Future<List<String>?> getPhotoFromStorage(String currentUserID) async {
     final listImageOfAvatar = await Supabase.instance.client.storage
@@ -53,6 +154,8 @@ class _ProfileState extends State<Profile> {
 
   @override
   void initState() {
+    myAccount = context.read<AuthCubit>().userData;
+    checkSentAddFriend();
     super.initState();
   }
 
@@ -83,6 +186,11 @@ class _ProfileState extends State<Profile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            widget.userInformation!.id == myAccount!.id
+                ? const SizedBox(
+                    height: 30,
+                  )
+                : Container(),
             //Avatar , name and other name
             Container(
               height: size.height * 0.2,
@@ -114,23 +222,67 @@ class _ProfileState extends State<Profile> {
             //   height: 10,
             // ),
             //Action
-            Center(
-              child: SizedBox(
-                width: size.width * 0.6,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _itemAction(Icons.messenger_outline, null),
-                    _itemAction(Icons.videocam_outlined, null),
-                    _itemAction(Icons.call_outlined, null),
-                    _itemAction(Icons.more_horiz, null),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(
-              height: 20,
-            ),
+            widget.userInformation!.id == myAccount!.id
+                ? Container()
+                : Center(
+                    child: SizedBox(
+                      width: size.width * 0.7,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              checkFriend() ? null : tapToAddFriend();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
+                              decoration: BoxDecoration(
+                                  color: checkFriend() == true ||
+                                          isSentAddFriend == true
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.2)
+                                      : Theme.of(context).colorScheme.primary,
+                                  borderRadius: BorderRadius.circular(10)),
+                              child: Text(
+                                checkFriend()
+                                    ? 'Friend'
+                                    : (isSentAddFriend!
+                                        ? 'Added Friend'
+                                        : 'Add friend'),
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    color: checkFriend() == true ||
+                                            isSentAddFriend == true
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .primaryContainer,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                          _itemAction(
+                              Icons.messenger_outline, () => tapToChat()),
+                          if (isSentAddFriend!)
+                            popUpAction('Remove add request'),
+                          if (checkFriend()) popUpAction('unFriends'),
+                          if (!checkFriend() && !isSentAddFriend!)
+                            _itemAction(
+                                Icons.more_horiz,
+                                () => showSnackBar.show_error(
+                                    'Not Support', context))
+                        ],
+                      ),
+                    ),
+                  ),
+            widget.userInformation!.id == myAccount!.id
+                ? Container()
+                : const SizedBox(
+                    height: 20,
+                  ),
             Divider(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
               thickness: 1,
@@ -171,13 +323,13 @@ class _ProfileState extends State<Profile> {
                     future: getPhotoFromStorage(widget.userInformation!.id),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(child: CircularProgressIndicator());
+                        return const Center(child: CircularProgressIndicator());
                       }
                       if (snapshot.hasError) {
                         return Center(child: Text("Lỗi: ${snapshot.error}"));
                       }
                       if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(child: Text("Không có ảnh nào"));
+                        return const Center(child: Text("Không có ảnh nào"));
                       }
                       final List<String> listImage = snapshot.data!;
                       return Row(
@@ -244,6 +396,26 @@ class _ProfileState extends State<Profile> {
           color: Theme.of(context).colorScheme.primary,
         ),
       ),
+    );
+  }
+
+  Widget popUpAction(String text) {
+    return PopupMenuButton(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      padding: EdgeInsets.zero,
+      menuPadding: EdgeInsets.zero,
+      itemBuilder: (context) => [
+        PopupMenuItem(
+            value: '',
+            child: Text(
+              text,
+              style: TextStyle(
+                  fontSize: 14, color: Theme.of(context).colorScheme.surface),
+            ))
+      ],
+      onSelected: (value) => selectOption(),
+      onOpened: null,
+      child: _itemAction(Icons.more_horiz, null),
     );
   }
 

@@ -1,12 +1,15 @@
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Components/Avatar.dart';
-import 'package:chat_app/Components/Navigation/NavigationCubit.dart';
+import 'package:chat_app/Components/TopSnackBar.dart';
+import 'package:chat_app/Person/Presentation/Screen/SettingTheme.dart';
+import 'package:chat_app/config/Navigation/NavigationCubit.dart';
 import 'package:chat_app/Person/Presentation/Screen/Profile.dart';
 import 'package:chat_app/Person/Presentation/Screen/SettingAccount.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../Authentication/Domains/Entity/User.dart';
+import '../../../Components/HelpScreen.dart';
 import '../../../Friends/Presentation/Screen/FriendScreen.dart';
 
 class SettingScreen extends StatefulWidget {
@@ -53,6 +56,19 @@ class _SettingScreenState extends State<SettingScreen> {
             builder: (c) => FriendScreen(
                   userApp: currentUser,
                 )));
+  }
+
+  void tapToSettingTheme() {
+    Navigator.push(context, MaterialPageRoute(builder: (c) => SettingTheme()));
+  }
+
+  void tapToHelp() {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (c) => const helpScreen()));
+  }
+
+  void tapToSettingNotification() {
+    showSnackBar.show_error('Not upgraded yet', context);
   }
 
   Future<void> refresh() async {
@@ -178,11 +194,15 @@ class _SettingScreenState extends State<SettingScreen> {
                 'Change name,num phone, avatar, password',
                 () => tapToEditAccount()),
             _itemFunction(context, Icons.message, 'Chat',
-                'Theme, wallpaper, chat history', null),
-            _itemFunction(context, Icons.notifications_active, 'Notifications',
-                'Message, group & call tones', null),
+                'Theme, wallpaper, chat history', () => tapToSettingTheme()),
+            _itemFunction(
+                context,
+                Icons.notifications_active,
+                'Notifications',
+                'Message, group & call tones',
+                () => tapToSettingNotification()),
             _itemFunction(context, Icons.help, 'Help',
-                'FAQ, contact us, privacy policy', null),
+                'FAQ, contact us, privacy policy', () => tapToHelp()),
             _itemFunction(context, Icons.person_add_alt, 'Add friend',
                 'Invite friends, contacts', () => tapToAddFriend()),
             _itemFunction(context, Icons.logout, 'Log out',

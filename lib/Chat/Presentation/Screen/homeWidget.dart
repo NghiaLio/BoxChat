@@ -13,7 +13,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../../Authentication/Domains/Entity/User.dart';
 import '../../../Authentication/Presentation/Cubit/authCubit.dart';
 // ignore: unused_import
-import '../../../Components/timePost.dart';
+import '../../../config/timePost.dart';
 import '../../../Person/Presentation/Screen/Profile.dart';
 import '../Cubit/Home/HomeChatCubit.dart';
 import '../Cubit/Home/HomeChatState.dart';
@@ -33,8 +33,40 @@ class _homeState extends State<home> {
     await context.read<HomeChatCubit>().deleteChatRoom(chatID);
   }
 
-  void turn_off_Notify(BuildContext context) {
-    print('object');
+  bool checkEnableNotify(String idUser) {
+    return currentUser!.EnableNotify!.contains(idUser);
+  }
+
+  void toggle_Notify(BuildContext context, String idUser) async {
+    //check enable notify
+    final bool isEnable = checkEnableNotify(idUser);
+    if (isEnable) {
+      //smoth Ui
+      setState(() {
+        currentUser!.EnableNotify!.removeWhere((t) => t == idUser);
+      });
+      await context
+          .read<HomeChatCubit>()
+          .refuseNotify(idUser)
+          .catchError((onError) {
+        setState(() {
+          currentUser!.EnableNotify!.add(idUser);
+        });
+      });
+      return;
+    }
+    //smoth Ui
+    setState(() {
+      currentUser!.EnableNotify!.add(idUser);
+    });
+    await context
+        .read<HomeChatCubit>()
+        .allowNotify(idUser)
+        .catchError((onError) {
+      setState(() {
+        currentUser!.EnableNotify!.removeWhere((t) => t == idUser);
+      });
+    });
   }
 
   //openCHat
@@ -46,6 +78,7 @@ class _homeState extends State<home> {
           MaterialPageRoute(
               builder: (c) => ChatScreen(
                     user: user,
+                    isFromHome: true,
                   )));
     } else {
       final ChatRoom chat =
@@ -56,6 +89,7 @@ class _homeState extends State<home> {
               builder: (c) => ChatScreen(
                     chat: chat,
                     user: user,
+                    isFromHome: true,
                   )));
     }
   }
@@ -67,6 +101,7 @@ class _homeState extends State<home> {
             builder: (c) => ChatScreen(
                   chat: chat_room,
                   user: otherUser,
+                  isFromHome: true,
                 )));
   }
 
@@ -76,8 +111,12 @@ class _homeState extends State<home> {
       return 'Start a chat';
     } else {
       Message lastMessage = listMessage.last;
-      if (lastMessage.type.name == 'Image') {
+      if (lastMessage.type == MessageType.Image) {
         return 'Sent an image';
+      } else if (lastMessage.type == MessageType.Video) {
+        return 'Sent a video';
+      } else if (lastMessage.type == MessageType.Audio) {
+        return 'Sent a audio';
       }
       return lastMessage.content;
     }
@@ -92,12 +131,12 @@ class _homeState extends State<home> {
                 )));
   }
 
-  void openSearch(List<UserApp>? listUser) {
+  void openSearch(List<UserApp>? listFriends) {
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (c) => SearchUser(
-                  listUser: listUser,
+                  listUser: listFriends,
                 )));
   }
 
@@ -118,6 +157,8 @@ class _homeState extends State<home> {
     return listMessageNotSeen.length;
   }
 
+  
+
   @override
   void initState() {
     currentUser = context.read<AuthCubit>().userData;
@@ -129,20 +170,24 @@ class _homeState extends State<home> {
     return BlocConsumer<HomeChatCubit, HomeChatState>(
         builder: (context, state) {
           print(state);
-          if (state is getUserSuccess && state.listUser!.isNotEmpty) {
-            List<UserApp> listUser = state.listUser ?? [];
+          if (state is getUserSuccess && state.listFriends!.isNotEmpty) {
+            List<UserApp> listFriends = state.listFriends ?? [];
+            List<UserApp> listUsers = state.listUsers ?? [];
             List<ChatRoom> listChat = state.listChat ?? [];
-            return _homeWidget(listUser, listChat);
+            return _homeWidget(listFriends, listChat, listUsers);
           } else {
-            return  Center(
-              child: Loading(height_width:MediaQuery.of(context).size.width*0.1 , color: Theme.of(context).colorScheme.primary),
+            return Center(
+              child: Loading(
+                  height_width: MediaQuery.of(context).size.width * 0.1,
+                  color: Theme.of(context).colorScheme.primary),
             );
           }
         },
         listener: (context, state) {});
   }
 
-  Widget _homeWidget(List<UserApp> listUser, List<ChatRoom> listChat) {
+  Widget _homeWidget(List<UserApp> listFriends, List<ChatRoom> listChat,
+      List<UserApp> listUsers) {
     final size = MediaQuery.of(context).size;
     return Container(
       height: size.height,
@@ -163,7 +208,7 @@ class _homeState extends State<home> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           GestureDetector(
-                            onTap: () => openSearch(listUser),
+                            onTap: () => openSearch(listFriends),
                             child: Container(
                               height: size.width * 0.1,
                               width: size.width * 0.1,
@@ -205,7 +250,7 @@ class _homeState extends State<home> {
                       ),
                       //ListUsser
                       Expanded(
-                          child: listUser.isEmpty
+                          child: listFriends.isEmpty
                               ? Center(
                                   child: Text(
                                     "No friends yet",
@@ -218,9 +263,9 @@ class _homeState extends State<home> {
                                 )
                               : ListView.builder(
                                   scrollDirection: Axis.horizontal,
-                                  itemCount: listUser.length,
+                                  itemCount: listFriends.length,
                                   itemBuilder: (context, index) =>
-                                      _itemUser(listUser[index])))
+                                      _itemUser(listFriends[index])))
                     ],
                   ),
                 ),
@@ -260,7 +305,7 @@ class _homeState extends State<home> {
                         : ListView.builder(
                             itemCount: listChat.length,
                             itemBuilder: (context, index) =>
-                                _itemChat(listChat[index], listUser)))
+                                _itemChat(listChat[index], listUsers)))
               ],
             ),
           )),
@@ -330,6 +375,7 @@ class _homeState extends State<home> {
     // lấy ra user còn lại trong room
     String otherID =
         chat_room.participant.firstWhere((test) => test != currentUser!.id);
+    //từ id lấy ra cả UserAPP
     UserApp otherUser = listUser.firstWhere((test) => test.id == otherID);
 
     return Padding(
@@ -340,7 +386,7 @@ class _homeState extends State<home> {
           endActionPane: ActionPane(motion: const ScrollMotion(), children: [
             CustomSlidableAction(
                 flex: 1,
-                onPressed: turn_off_Notify,
+                onPressed: (context) => toggle_Notify(context, otherUser.id),
                 child: Container(
                   height: size.width * 0.1,
                   width: size.width * 0.1,
@@ -348,7 +394,9 @@ class _homeState extends State<home> {
                       shape: BoxShape.circle,
                       color: Theme.of(context).colorScheme.surface),
                   child: Icon(
-                    Icons.notifications,
+                    checkEnableNotify(otherUser.id)
+                        ? Icons.notifications
+                        : Icons.notifications_off,
                     size: 28,
                     color: Theme.of(context).colorScheme.primaryContainer,
                   ),
@@ -369,92 +417,98 @@ class _homeState extends State<home> {
                   ),
                 )),
           ]),
-          child: Row(
-            children: [
-              Avatar(
-                height_width: 0.13,
-                user: otherUser,
-                border: Border.all(
-                    width: 3, color: Theme.of(context).colorScheme.primary),
-              ),
-              const SizedBox(
-                width: 15,
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    otherUser.userName,
-                    style: TextStyle(
-                        fontSize: 18,
-                        color: Theme.of(context).colorScheme.surface,
-                        fontWeight: FontWeight.w500),
-                  ),
-                  SizedBox(
-                    width: size.width * 0.72 - 5,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          displayMessage(chat_room),
-                          style: TextStyle(
-                              fontSize: 16,
-                              color: isSeenMessage(chat_room)
-                                  ? Theme.of(context).colorScheme.onSurface
-                                  : Theme.of(context).colorScheme.surface,
-                              fontWeight: isSeenMessage(chat_room)
-                                  ? FontWeight.w400
-                                  : FontWeight.w700),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        chat_room.listMessage.isNotEmpty
-                            ? Row(
-                                children: [
-                                  numberMessageNotSeen(chat_room) > 0
-                                      ? Container(
-                                          height: size.width * 0.04,
-                                          width: size.width * 0.04,
-                                          decoration: const BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: Colors.red),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            numberMessageNotSeen(chat_room)
-                                                .toString(),
-                                            style: const TextStyle(
-                                                fontSize: 10,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                        )
-                                      : Container(),
-                                  const SizedBox(
-                                    width: 10,
-                                  ),
-                                  Text(
-                                    '${chat_room.listMessage.last.sendAt.toDate().hour}:${chat_room.listMessage.last.sendAt.toDate().minute}',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: isSeenMessage(chat_room)
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .surface,
-                                        fontWeight: isSeenMessage(chat_room)
-                                            ? FontWeight.w400
-                                            : FontWeight.w700),
-                                  ),
-                                ],
-                              )
-                            : Container(),
-                      ],
+          child: SizedBox(
+            width: size.width,
+            child: Row(
+              children: [
+                Avatar(
+                  height_width: 0.13,
+                  user: otherUser,
+                  border: Border.all(
+                      width: 3, color: Theme.of(context).colorScheme.primary),
+                ),
+                const SizedBox(
+                  width: 15,
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      otherUser.userName,
+                      style: TextStyle(
+                          fontSize: 18,
+                          color: Theme.of(context).colorScheme.surface,
+                          fontWeight: FontWeight.w500),
                     ),
-                  )
-                ],
-              )
-            ],
+                    SizedBox(
+                      width: size.width * 0.72 - 5,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          SizedBox(
+                            width: size.width * 0.5,
+                            child: Text(
+                              displayMessage(chat_room),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: isSeenMessage(chat_room)
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Theme.of(context).colorScheme.surface,
+                                  fontWeight: isSeenMessage(chat_room)
+                                      ? FontWeight.w400
+                                      : FontWeight.w700),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          chat_room.listMessage.isNotEmpty
+                              ? Row(
+                                  children: [
+                                    numberMessageNotSeen(chat_room) > 0
+                                        ? Container(
+                                            height: size.width * 0.04,
+                                            width: size.width * 0.04,
+                                            decoration: const BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.red),
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              numberMessageNotSeen(chat_room)
+                                                  .toString(),
+                                              style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                          )
+                                        : Container(),
+                                    const SizedBox(
+                                      width: 10,
+                                    ),
+                                    Text(
+                                      '${chat_room.listMessage.last.sendAt.toDate().hour}:${chat_room.listMessage.last.sendAt.toDate().minute}',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: isSeenMessage(chat_room)
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .surface,
+                                          fontWeight: isSeenMessage(chat_room)
+                                              ? FontWeight.w400
+                                              : FontWeight.w700),
+                                    ),
+                                  ],
+                                )
+                              : Container(),
+                        ],
+                      ),
+                    )
+                  ],
+                )
+              ],
+            ),
           ),
         ),
       ),

@@ -13,6 +13,7 @@ class Posts {
   String post_image_url;
   List<Likes>? listLikes;
   List<Comments>? listComments;
+  List<Comments>? listAnswerOfComments;
 
   Posts(
       {this.id,
@@ -23,7 +24,8 @@ class Posts {
       required this.user_id,
       required this.user_name,
       this.listLikes,
-      this.listComments});
+      this.listComments,
+      this.listAnswerOfComments});
 
   Posts copyWith(
       {int? id,
@@ -34,7 +36,9 @@ class Posts {
       String? image_user_url,
       String? post_image_url,
       List<Likes>? listLikes,
-      List<Comments>? listComments}) {
+      List<Comments>? listComments,
+      List<Comments>? listAnswerOfComments
+      }) {
     return Posts(
         id: id ?? this.id,
         created_at: created_at ?? this.created_at,
@@ -44,7 +48,9 @@ class Posts {
         user_id: user_id ?? this.user_id,
         user_name: user_id ?? this.user_name,
         listLikes: listLikes ?? this.listLikes,
-        listComments: listComments ?? this.listComments);
+        listComments: listComments ?? this.listComments,
+        listAnswerOfComments: listAnswerOfComments ?? this.listAnswerOfComments
+        );
   }
 
   factory Posts.fromJson(Map<String, dynamic> json) {

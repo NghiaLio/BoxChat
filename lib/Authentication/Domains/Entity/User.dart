@@ -12,6 +12,8 @@ class UserApp {
   List<String>? requiredAddFriend;
   List<String>? friends;
   Timestamp? lastActive;
+  String? pushToken;
+  List<String>? EnableNotify;
 
   UserApp(
       {required this.id,
@@ -24,7 +26,7 @@ class UserApp {
       this.isOnline,
       this.requiredAddFriend,
       this.friends,
-      this.lastActive});
+      this.lastActive, this.pushToken, this.EnableNotify});
 
   //from Json
   factory UserApp.fromJson(Map<String, dynamic> json) {
@@ -39,7 +41,10 @@ class UserApp {
         isOnline: json['isOnline'] ?? false,
         requiredAddFriend: List<String>.from(json['requiredAddFriend']?? []) ,
         friends: List<String>.from(json['friends'] ?? []),
-        lastActive: json['lastActive']);
+        lastActive: json['lastActive'],
+        pushToken: json['pushToken'] ?? '',
+        EnableNotify: List<String>.from(json['EnableNotify']?? [])
+        );
   }
 
   //to Json
@@ -54,6 +59,8 @@ class UserApp {
         'isOnline': isOnline,
         'requiredAddFriend': requiredAddFriend,
         'friends': friends,
-        'lastActive': lastActive
+        'lastActive': lastActive,
+        'pushToken':pushToken,
+        'EnableNotify':EnableNotify
       };
 }

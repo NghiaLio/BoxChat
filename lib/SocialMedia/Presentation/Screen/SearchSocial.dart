@@ -1,13 +1,16 @@
 // ignore_for_file: must_be_immutable
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chat_app/Person/Presentation/Screen/Profile.dart';
+import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialCubits.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../Authentication/Domains/Entity/User.dart';
 
 class Searchsocial extends StatefulWidget {
-  List<UserApp>? listUser;
-  Searchsocial({super.key, this.listUser});
+  UserApp? user;
+  Searchsocial({super.key, this.user});
 
   @override
   State<Searchsocial> createState() => _SearchsocialState();
@@ -27,7 +30,7 @@ class _SearchsocialState extends State<Searchsocial> {
       text: 'Other',
     ),
   ];
-
+  List<UserApp>? listUser;
   List<UserApp> listSearchUser = [];
   void clearText() {
     searchController.clear();
@@ -35,7 +38,7 @@ class _SearchsocialState extends State<Searchsocial> {
 
   void search(String value) {
     print(value);
-    final List<UserApp> listUserContainText = widget.listUser!
+    final List<UserApp> listUserContainText = listUser!
         .where((user) => user.userName.contains(value) == true)
         .toList();
     setState(() {
@@ -43,8 +46,27 @@ class _SearchsocialState extends State<Searchsocial> {
     });
   }
 
+  void fetchAllUser() async {
+    final listUserData =
+        await context.read<Socialcubits>().getAllUser(widget.user!.id);
+    setState(() {
+      listUser = listUserData;
+    });
+    print(listUser);
+  }
+
+  void viewProfile(UserApp? user) async {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (c) => Profile(
+                  userInformation: user,
+                )));
+  }
+
   @override
   void initState() {
+    fetchAllUser();
     searchController.addListener(() {
       if (searchController.text.isNotEmpty) {
         setState(() {
@@ -112,14 +134,15 @@ class _SearchsocialState extends State<Searchsocial> {
                             width: 5,
                           ),
                           Expanded(
-                              child: Center(
+                              child: Padding(
+                            padding: const EdgeInsets.only(top: 5),
                             child: TextField(
                               controller: searchController,
                               onChanged: (value) => search(value),
                               decoration: const InputDecoration(
                                   hintText: 'Search', border: InputBorder.none),
                               style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 16,
                                   color: Theme.of(context).colorScheme.surface,
                                   fontWeight: FontWeight.w500),
                             ),
@@ -182,33 +205,38 @@ class _SearchsocialState extends State<Searchsocial> {
             ),
           )
         : ListView.builder(
+            padding: const EdgeInsets.only(top: 10),
             itemCount: listSearchUser.length,
-            itemBuilder: (context, index) => Container(
-                  height: MediaQuery.of(context).size.height * 0.08,
-                  width: MediaQuery.of(context).size.width,
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Colors.red,
-                        backgroundImage:
-                            listSearchUser[index].avatarUrl!.isNotEmpty
-                                ? CachedNetworkImageProvider(
-                                    listSearchUser[index].avatarUrl!)
-                                : const AssetImage('assets/images/person.jpg'),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        listSearchUser[index].userName,
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: Theme.of(context).colorScheme.surface,
-                            fontWeight: FontWeight.w500),
-                      )
-                    ],
+            itemBuilder: (context, index) => GestureDetector(
+                  onTap: () => viewProfile(listSearchUser[index]),
+                  child: Container(
+                    height: MediaQuery.of(context).size.height * 0.08,
+                    width: MediaQuery.of(context).size.width,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8.0, vertical: 4.0),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 25,
+                          backgroundImage: listSearchUser[index]
+                                  .avatarUrl!
+                                  .isNotEmpty
+                              ? CachedNetworkImageProvider(
+                                  listSearchUser[index].avatarUrl!)
+                              : const AssetImage('assets/images/person.jpg'),
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        Text(
+                          listSearchUser[index].userName,
+                          style: TextStyle(
+                              fontSize: 18,
+                              color: Theme.of(context).colorScheme.surface,
+                              fontWeight: FontWeight.w500),
+                        )
+                      ],
+                    ),
                   ),
                 ));
   }

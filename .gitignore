@@ -1,6 +1,7 @@
 firebase.json
 android/app/google-services.json
 lib/firebase_options.dart
+assets/chatapp-c4dc9-firebase-adminsdk-fbsvc-195a7b7a4f.json
 
 # Miscellaneous
 *.env

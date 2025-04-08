@@ -1,10 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
+import 'package:chat_app/Chat/Domain/Models/Message.dart';
 import 'package:chat_app/Components/CircleProgressIndicator.dart';
-import 'package:chat_app/Components/DisplayImage.dart';
+import 'package:chat_app/Components/DisplayFile.dart';
 import 'package:chat_app/Components/TopSnackBar.dart';
-import 'package:chat_app/Components/timePost.dart';
+import 'package:chat_app/config/timePost.dart';
 import 'package:chat_app/SocialMedia/Domain/Entities/likes.dart';
 import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialCubits.dart';
 import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialState.dart';
@@ -29,7 +30,12 @@ class _SocialScreenState extends State<SocialScreen> {
   UserApp? currentUser;
 
   void openSearch() {
-    Navigator.push(context, MaterialPageRoute(builder: (c) => Searchsocial()));
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (c) => Searchsocial(
+                  user: currentUser,
+                )));
   }
 
   void selectImage() {
@@ -93,20 +99,22 @@ class _SocialScreenState extends State<SocialScreen> {
             borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
         builder: (context) => Commentscreen(
               listComments: post.listComments!,
+              listAnswerOfComment: post.listAnswerOfComments!,
               postID: post.id!,
               currentUser: currentUser,
               numFavor: post.listLikes!.length,
             ));
   }
 
-  void openImage(String imageUrl, String user_id, String user_name) {
+  void openFile(String FileUrl, String user_id, String user_name) {
     final UserApp user = UserApp(id: user_id, userName: user_name, email: '');
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (c) => DisplayImage(
-                  urlImage: imageUrl,
-                  userOfImage: user,
+            builder: (c) => DisplayFile(
+                  urlFile: FileUrl,
+                  type: MessageType.Image,
+                  userOfFile: user, 
                 )));
   }
 
@@ -229,7 +237,9 @@ class _SocialScreenState extends State<SocialScreen> {
               child: Container(
                 height: MediaQuery.of(context).size.height * 0.6,
                 alignment: Alignment.center,
-                child:  Loading(height_width: MediaQuery.of(context).size.width*0.1, color:Theme.of(context).colorScheme.primary ),
+                child: Loading(
+                    height_width: MediaQuery.of(context).size.width * 0.1,
+                    color: Theme.of(context).colorScheme.primary),
               ),
             );
           }
@@ -356,7 +366,7 @@ class _SocialScreenState extends State<SocialScreen> {
               //Image
               post.post_image_url.isNotEmpty
                   ? GestureDetector(
-                      onTap: () => openImage(
+                      onTap: () => openFile(
                           post.post_image_url, post.user_id, post.user_name),
                       child: Center(
                         child: CachedNetworkImage(
