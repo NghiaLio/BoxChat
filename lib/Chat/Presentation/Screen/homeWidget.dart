@@ -1,7 +1,10 @@
 // ignore_for_file: non_constant_identifier_names, camel_case_types
 
+
 import 'package:chat_app/Chat/Domain/Models/ChatRoom.dart';
 import 'package:chat_app/Chat/Domain/Models/Message.dart';
+import 'package:chat_app/Chat/Presentation/Cubit/FriendBloc/FriendState.dart';
+import 'package:chat_app/Chat/Presentation/Cubit/FriendBloc/friendCubit.dart';
 import 'package:chat_app/Chat/Presentation/Screen/ChatScreen.dart';
 import 'package:chat_app/Chat/Presentation/Screen/SearchUser.dart';
 import 'package:chat_app/Components/Avatar.dart';
@@ -9,14 +12,13 @@ import 'package:chat_app/Components/CircleProgressIndicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-
 import '../../../Authentication/Domains/Entity/User.dart';
 import '../../../Authentication/Presentation/Cubit/authCubit.dart';
 // ignore: unused_import
 import '../../../config/timePost.dart';
 import '../../../Person/Presentation/Screen/Profile.dart';
-import '../Cubit/Home/HomeChatCubit.dart';
-import '../Cubit/Home/HomeChatState.dart';
+import '../Cubit/ChatRoomBloc/ChatRoomCubit.dart';
+import '../Cubit/ChatRoomBloc/ChatRoomState.dart';
 
 class home extends StatefulWidget {
   const home({super.key});
@@ -29,8 +31,9 @@ class _homeState extends State<home> {
   //currentUser
   UserApp? currentUser;
 
+
   void deleteChatRoom(BuildContext context, String chatID) async {
-    await context.read<HomeChatCubit>().deleteChatRoom(chatID);
+    await context.read<Chatroomcubit>().deleteChatRoom(chatID);
   }
 
   bool checkEnableNotify(String idUser) {
@@ -46,7 +49,7 @@ class _homeState extends State<home> {
         currentUser!.EnableNotify!.removeWhere((t) => t == idUser);
       });
       await context
-          .read<HomeChatCubit>()
+          .read<Chatroomcubit>()
           .refuseNotify(idUser)
           .catchError((onError) {
         setState(() {
@@ -60,7 +63,7 @@ class _homeState extends State<home> {
       currentUser!.EnableNotify!.add(idUser);
     });
     await context
-        .read<HomeChatCubit>()
+        .read<Chatroomcubit>()
         .allowNotify(idUser)
         .catchError((onError) {
       setState(() {
@@ -71,7 +74,7 @@ class _homeState extends State<home> {
 
   //openCHat
   void openChat(UserApp user) async {
-    final isHaveChat = await context.read<HomeChatCubit>().checkChat(user.id);
+    final isHaveChat = await context.read<Chatroomcubit>().checkChat(user.id);
     if (isHaveChat) {
       Navigator.push(
           context,
@@ -82,7 +85,7 @@ class _homeState extends State<home> {
                   )));
     } else {
       final ChatRoom chat =
-          await context.read<HomeChatCubit>().createChat(user.id);
+          await context.read<Chatroomcubit>().createChat(user.id);
       Navigator.push(
           context,
           MaterialPageRoute(
@@ -157,37 +160,16 @@ class _homeState extends State<home> {
     return listMessageNotSeen.length;
   }
 
-  
-
   @override
   void initState() {
     currentUser = context.read<AuthCubit>().userData;
+    Future.wait([context.read<ListFriendcubit>().getListFriends(),
+    context.read<Chatroomcubit>().getAllChat()]);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<HomeChatCubit, HomeChatState>(
-        builder: (context, state) {
-          print(state);
-          if (state is getUserSuccess && state.listFriends!.isNotEmpty) {
-            List<UserApp> listFriends = state.listFriends ?? [];
-            List<UserApp> listUsers = state.listUsers ?? [];
-            List<ChatRoom> listChat = state.listChat ?? [];
-            return _homeWidget(listFriends, listChat, listUsers);
-          } else {
-            return Center(
-              child: Loading(
-                  height_width: MediaQuery.of(context).size.width * 0.1,
-                  color: Theme.of(context).colorScheme.primary),
-            );
-          }
-        },
-        listener: (context, state) {});
-  }
-
-  Widget _homeWidget(List<UserApp> listFriends, List<ChatRoom> listChat,
-      List<UserApp> listUsers) {
     final size = MediaQuery.of(context).size;
     return Container(
       height: size.height,
@@ -195,121 +177,186 @@ class _homeState extends State<home> {
       color: Theme.of(context).colorScheme.surface,
       child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverToBoxAdapter(
-                child: Container(
-                  height: size.height * 0.3,
-                  width: size.width,
-                  padding: const EdgeInsets.only(top: 40, left: 20, right: 20),
-                  child: Column(
-                    children: [
-                      //AppBarr
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          GestureDetector(
-                            onTap: () => openSearch(listFriends),
-                            child: Container(
-                              height: size.width * 0.1,
-                              width: size.width * 0.1,
-                              decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                      width: 2)),
-                              child: Icon(
-                                Icons.search_rounded,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'Home',
+            return [SliverToBoxAdapter(child: _headerWidget())];
+          },
+          body: _bodyWiget()),
+    );
+  }
+
+
+  Widget _headerWidget() {
+    final size = MediaQuery.of(context).size;
+    return BlocBuilder<ListFriendcubit, ListFriendstate>(
+        builder: (context, state) {
+          print(state);
+      if (state is loadingListFriend) {
+        return Container(
+          height: size.height * 0.3,
+          width: size.width,
+          padding: const EdgeInsets.only(top: 40, left: 20, right: 20),
+          child: Center(
+            child: Loading(
+                height_width: size.width * 0.1,
+                color: Theme.of(context).colorScheme.primaryContainer),
+          ),
+        );
+      } else if (state is onErrorListFriend) {
+        return Center(
+          child: Text(
+            state.error,
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.primaryContainer),
+          ),
+        );
+      } else if (state is getListFriendSuccess) {
+        //get list friend
+        List<UserApp> listFriends = state.listFriends ?? [];
+        return Container(
+          height: size.height * 0.3,
+          width: size.width,
+          padding: const EdgeInsets.only(top: 40, left: 20, right: 20),
+          child: Column(
+            children: [
+              //AppBarr
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => openSearch(listFriends),
+                    child: Container(
+                      height: size.width * 0.1,
+                      width: size.width * 0.1,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              width: 2)),
+                      child: Icon(
+                        Icons.search_rounded,
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'Home',
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.primaryContainer),
+                  ),
+                  GestureDetector(
+                    onTap: openProfiles,
+                    child: Avatar(
+                      height_width: 0.13,
+                      user: currentUser,
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              //ListUsser
+              Expanded(
+                  child: listFriends.isEmpty
+                      ? Center(
+                          child: Text(
+                            "No friends yet",
                             style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 16,
                                 color: Theme.of(context)
                                     .colorScheme
                                     .primaryContainer),
                           ),
-                          GestureDetector(
-                            onTap: openProfiles,
-                            child: Avatar(
-                              height_width: 0.13,
-                              user: currentUser,
-                            ),
-                          )
-                        ],
-                      ),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      //ListUsser
-                      Expanded(
-                          child: listFriends.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    "No friends yet",
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primaryContainer),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: listFriends.length,
-                                  itemBuilder: (context, index) =>
-                                      _itemUser(listFriends[index])))
-                    ],
-                  ),
-                ),
-              )
-            ];
-          },
-          body: Container(
-            height: size.height * 0.7,
-            width: size.width,
-            decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30))),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  height: 5,
-                  width: size.width * 0.2,
-                  decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      borderRadius: BorderRadius.circular(20)),
-                ),
-                Expanded(
-                    child: listChat.isEmpty
-                        ? Center(
-                            child: Text(
-                              "No Chats yet",
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: listChat.length,
-                            itemBuilder: (context, index) =>
-                                _itemChat(listChat[index], listUsers)))
-              ],
-            ),
-          )),
-    );
+                        )
+                      : ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: listFriends.length,
+                          itemBuilder: (context, index) =>
+                              _itemUser(listFriends[index])))
+            ],
+          ),
+        );
+      }
+      else{
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      }
+    });
+  }
+
+  Widget _bodyWiget() {
+    final size = MediaQuery.of(context).size;
+    return BlocBuilder<Chatroomcubit, Chatroomstate>(builder: (context, state) {
+      print(state);
+      if (state is onError) {
+        return Center(
+          child: Text(
+            state.message!,
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.primaryContainer),
+          ),
+        );
+      } else if (state is getChatSuccess) {
+        List<ChatRoom> listChat = state.listChat ?? [];
+        List<UserApp> listUsers = context.read<AuthCubit>().allUser ?? [];
+        return Container(
+          height: size.height * 0.7,
+          width: size.width,
+          decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(30), topRight: Radius.circular(30))),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                height: 5,
+                width: size.width * 0.2,
+                decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    borderRadius: BorderRadius.circular(20)),
+              ),
+              Expanded(
+                  child: listChat.isEmpty
+                      ? Center(
+                          child: Text(
+                            "No Chats yet",
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: Theme.of(context).colorScheme.onSurface),
+                          ),
+                        )
+                      : ListView.builder(
+                        physics:const AlwaysScrollableScrollPhysics(),
+                          itemCount: listChat.length,
+                          itemBuilder: (context, index) =>
+                              _itemChat(listChat[index], listUsers)))
+            ],
+          ),
+        );
+      }
+      else{
+        return Container(
+          height: size.height * 0.7,
+          width: size.width,
+          decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(30), topRight: Radius.circular(30))),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          child: Center(
+            child: Loading(
+                height_width: size.width * 0.1,
+                color: Theme.of(context).colorScheme.primaryContainer),
+          ),
+        );
+      }
+    });
   }
 
   Widget _itemUser(UserApp user) {

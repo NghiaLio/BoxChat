@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously, must_be_immutable
 
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Chat/Presentation/Screen/ChatScreen.dart';
@@ -8,13 +8,17 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../Authentication/Domains/Entity/User.dart';
-import '../Cubit/Home/HomeChatCubit.dart';
+import '../../../SocialMedia/Data/SocialData.dart';
+import '../../../SocialMedia/Presentation/Cubits/SocialCubits.dart';
+import '../../Data/ChatData.dart';
+import '../Cubit/ChatRoomBloc/ChatRoomCubit.dart';
 import '../../../Person/Presentation/Screen/SettingWidget.dart';
 import '../../../SocialMedia/Presentation/Screen/SocialWidget.dart';
+import '../Cubit/FriendBloc/friendCubit.dart';
 import 'homeWidget.dart';
 
 class HomeScreen extends StatefulWidget {
-  RemoteMessage ? initialMessage;
+  RemoteMessage? initialMessage;
   HomeScreen({super.key, this.initialMessage});
 
   @override
@@ -22,14 +26,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  Future<void> _fetchInitialData() async {
-    await Future.wait([
-      context.read<HomeChatCubit>().getAllUsers(),
-      context.read<HomeChatCubit>().getListFriends(),
-      context.read<HomeChatCubit>().getAllChat(),
-    ]);
-  }
-
   Future<bool> _onWillPop() async {
     // Set user status to offline before exiting
     context.read<AuthCubit>().updateIsOnline(false);
@@ -55,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _handleMessage(RemoteMessage message) {
     print('hello ${message.data}');
     context.read<NavigationCubit>().changeIndex(0);
-    final listUser = context.read<HomeChatCubit>().listUsers!;
+    final listUser = context.read<Chatroomcubit>().listUsers!;
     final String senderID = message.data['senderID'];
     final UserApp receiveUser =
         listUser.firstWhere((user) => user.id == senderID);
@@ -77,8 +73,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     // Add observer to listen for app lifecycle changes
     WidgetsBinding.instance.addObserver(this);
-
-    _fetchInitialData();
     // for setting user status to active
     context.read<AuthCubit>().updateIsOnline(true);
     // SystemChannels.lifecycle.setMessageHandler((message) {
@@ -119,48 +113,68 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  List<Widget> screen = [
-    const home(),
-    const SocialScreen(),
-    const SettingScreen()
-  ];
+  final chatRepo = ChatData();
+    final social_repo = Socialdata();
 
+  List<Widget> screen = [
+      const home(),
+      const SocialScreen(),
+      const SettingScreen()
+    ];
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: BlocBuilder<NavigationCubit, NavigationState>(
-          builder: (context, stateNav) {
-        return Scaffold(
-          body: screen[stateNav.index],
-          bottomNavigationBar: BottomNavigationBar(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              currentIndex: stateNav.index,
-              selectedItemColor: Theme.of(context).colorScheme.primary,
-              unselectedItemColor: Theme.of(context).colorScheme.onSurface,
-              onTap: context.read<NavigationCubit>().changeIndex,
-              items: const [
-                BottomNavigationBarItem(
-                    label: 'Message',
-                    icon: Icon(
-                      Icons.message,
-                      size: 28,
-                    )),
-                BottomNavigationBarItem(
-                    label: 'Social',
-                    icon: Icon(
-                      Icons.public,
-                      size: 28,
-                    )),
-                BottomNavigationBarItem(
-                    label: 'Setting',
-                    icon: Icon(
-                      Icons.settings,
-                      size: 28,
-                    )),
-              ]),
-        );
-      }),
-    );
+    
+    return MultiBlocProvider(
+        providers: [
+          BlocProvider(
+              create: (context) =>
+                  ListFriendcubit(chatRepo: chatRepo)),
+          BlocProvider(
+              create: (context) => Chatroomcubit(chatRepo: chatRepo)
+                ),
+          BlocProvider(create: (create) => NavigationCubit()),
+          BlocProvider(
+              create: (create) => Socialcubits(socialRepo: social_repo)),
+         
+        ],
+        child: WillPopScope(
+          onWillPop: _onWillPop,
+          child: BlocBuilder<NavigationCubit, NavigationState>(
+              builder: (context, stateNav) {
+            return Scaffold(
+              //khong rebuid lai widget
+              body: IndexedStack(
+                index: stateNav.index,
+                children: screen,
+              ),
+              bottomNavigationBar: BottomNavigationBar(
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  currentIndex: stateNav.index,
+                  selectedItemColor: Theme.of(context).colorScheme.primary,
+                  unselectedItemColor: Theme.of(context).colorScheme.onSurface,
+                  onTap: context.read<NavigationCubit>().changeIndex,
+                  items: const [
+                    BottomNavigationBarItem(
+                        label: 'Message',
+                        icon: Icon(
+                          Icons.message,
+                          size: 28,
+                        )),
+                    BottomNavigationBarItem(
+                        label: 'Social',
+                        icon: Icon(
+                          Icons.public,
+                          size: 28,
+                        )),
+                    BottomNavigationBarItem(
+                        label: 'Setting',
+                        icon: Icon(
+                          Icons.settings,
+                          size: 28,
+                        )),
+                  ]),
+            );
+          }),
+        ));
   }
 }

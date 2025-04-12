@@ -1,8 +1,8 @@
 // ignore_for_file: must_be_immutable
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Person/Presentation/Screen/Profile.dart';
-import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialCubits.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -48,11 +48,10 @@ class _SearchsocialState extends State<Searchsocial> {
 
   void fetchAllUser() async {
     final listUserData =
-        await context.read<Socialcubits>().getAllUser(widget.user!.id);
+        context.read<AuthCubit>().allUser;
     setState(() {
       listUser = listUserData;
     });
-    print(listUser);
   }
 
   void viewProfile(UserApp? user) async {

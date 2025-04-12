@@ -18,19 +18,26 @@ class Themecubit extends Cubit<ThemeState> {
   ThemeData? _theme;
   ThemeData? get theme => _theme;
 
-  Future<void> changePrimaryColor(Color color, Brightness brightness) async {
+  Future<void> changePrimaryColor(Color color) async {
     final prefs = await SharedPreferences.getInstance();
-    final String ColorValue = Colortheme.colorToRGBA(color);
-    await prefs.setString('mainColor', ColorValue);
+    final String colorValue = Colortheme.colorToRGBA(color);
+    await prefs.setString('mainColor', colorValue);
+    final Brightness brightness = prefs.getString('theme') == 'lightMode'
+        ? Brightness.light
+        : Brightness.dark;
     emit(ThemeState(getTheme(color, brightness)));
   }
 
   Future<void> changeTheme(bool isLightMode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('theme',!isLightMode ? 'lightMode': 'darkMode');
+    final Color color =
+        prefs.getString('mainColor') != null
+            ? Colortheme.rgbaToColor(prefs.getString('mainColor')!)
+            : _primaryColor;
     isLightMode
-        ? emit(ThemeState(getTheme(_primaryColor, Brightness.dark)))
-        : emit(ThemeState(getTheme(_primaryColor, Brightness.light)));
+        ? emit(ThemeState(getTheme(color, Brightness.dark)))
+        : emit(ThemeState(getTheme(color, Brightness.light)));
   }
 
   Future<void> loadTheme() async {

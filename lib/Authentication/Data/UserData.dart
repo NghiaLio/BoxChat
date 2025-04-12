@@ -73,6 +73,24 @@ class UserData implements UserRepo {
     }
   }
 
+  @override
+  Future<List<UserApp>?> getAlluser()async {
+    try {
+      final List<UserApp> listUser = await _firebaseFirestore
+          .collection('UserData')
+          .where('id', isNotEqualTo: _firebaseAuth.currentUser!.uid)
+          .get()
+          .then((value) =>
+              value.docs.map((e) => UserApp.fromJson(e.data())).toList())
+          .catchError((onError) => throw onError);
+      return listUser;
+    } catch (e) {
+      // throw Exception(e);
+      print(e);
+      return null;
+    }
+  }
+
   //resetPass
   @override
   Future<String?> resetPassword(String email) async {

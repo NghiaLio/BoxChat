@@ -12,7 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../Authentication/Domains/Entity/User.dart';
-import '../../../Chat/Presentation/Cubit/Home/HomeChatCubit.dart';
+import '../../../Chat/Presentation/Cubit/ChatRoomBloc/ChatRoomCubit.dart';
 import '../../../Chat/Presentation/Screen/ChatScreen.dart';
 
 class Profile extends StatefulWidget {
@@ -56,7 +56,7 @@ class _ProfileState extends State<Profile> {
   void tapToChat() async {
     //check chat exits
     final bool chatExists = await context
-        .read<HomeChatCubit>()
+        .read<Chatroomcubit>()
         .checkChat(widget.userInformation!.id);
     if (chatExists) {
       Navigator.pushReplacement(
@@ -69,7 +69,7 @@ class _ProfileState extends State<Profile> {
       return;
     }
     final ChatRoom = await context
-        .read<HomeChatCubit>()
+        .read<Chatroomcubit>()
         .createChat(widget.userInformation!.id);
     Navigator.pushReplacement(
         context,

@@ -42,9 +42,9 @@ class _SettingThemeState extends State<SettingTheme> {
       primaryColorString = Colortheme.colorToRGBA(color);
     });
     if(themeCurrent == getTheme(primaryColor, Brightness.light)){
-      await context.read<Themecubit>().changePrimaryColor(color,Brightness.light);
+      await context.read<Themecubit>().changePrimaryColor(color);
     }else{
-      await context.read<Themecubit>().changePrimaryColor(color,Brightness.dark);
+      await context.read<Themecubit>().changePrimaryColor(color);
     }
   }
 

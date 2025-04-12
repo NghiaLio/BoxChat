@@ -1,6 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:math';
+
 
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
 import 'package:chat_app/Chat/Domain/Repo/ChatRepo.dart';
@@ -29,23 +28,6 @@ class ChatData implements ChatRepo {
     return user;
   }
 
-  @override
-  Future<List<UserApp>?> getAllUser() async {
-    try {
-      final List<UserApp>? listUser = await _firebaseFirestore
-          .collection('UserData')
-          .where('id', isNotEqualTo: _firebaseAuth.currentUser!.uid)
-          .get()
-          .then((value) =>
-              value.docs.map((e) => UserApp.fromJson(e.data())).toList())
-          .catchError((onError) => throw onError);
-      return listUser;
-    } catch (e) {
-      // throw Exception(e);
-      print(e);
-      return null;
-    }
-  }
 
   @override
   Stream<QuerySnapshot<Map<String, dynamic>>> getAllFriend() {
@@ -158,7 +140,7 @@ class ChatData implements ChatRepo {
         "message": {
           "token": receiveUser.pushToken!,
           "notification": {"body": message, "title": receiveUser.userName},
-          "data": {"senderID":currentUser.id},
+          "data": {"senderID": currentUser.id},
         }
       };
       var headers = <String, String>{

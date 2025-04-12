@@ -3,13 +3,12 @@
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Chat/Data/ChatData.dart';
 import 'package:chat_app/Chat/Presentation/Cubit/DisplayMessage/DisplayCubit.dart';
-import 'package:chat_app/Chat/Presentation/Cubit/Home/HomeChatCubit.dart';
 import 'package:chat_app/Person/Presentation/Cubit/ThemeCubit.dart';
-import 'package:chat_app/config/Navigation/NavigationCubit.dart';
 import 'package:chat_app/Friends/Data/FriendData.dart';
 import 'package:chat_app/Friends/Presentation/Cubit/FriendCubit.dart';
 import 'package:chat_app/Person/Presentation/Cubit/personCubit.dart';
 import 'package:chat_app/SocialMedia/Data/SocialData.dart';
+// ignore: unused_import
 import 'package:chat_app/SocialMedia/Presentation/Cubits/SocialCubits.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -61,7 +60,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    
     super.initState();
   }
 
@@ -71,16 +69,14 @@ class _MyAppState extends State<MyApp> {
     return MultiBlocProvider(
         providers: [
           BlocProvider(
-              create: (create) => AuthCubit(userRepo: userRepo)..checkAuth()),
-          BlocProvider(create: (create) => HomeChatCubit(chatRepo: chatRepo)),
+              create: (create) => AuthCubit(userRepo: userRepo)
+                ..checkAuth()
+                ..getAllUser()),
           BlocProvider(create: (create) => DisplayCubit(chatRepo: chatRepo)),
-          BlocProvider(create: (create) => NavigationCubit()),
           BlocProvider(
               create: (create) =>
                   Personcubit(person_repo: person_repo, userRepo: userRepo)),
           BlocProvider(create: (create) => Themecubit()..loadTheme()),
-          BlocProvider(
-              create: (create) => Socialcubits(socialRepo: social_repo)),
           BlocProvider(
               create: (create) => Friendcubit(friendsRepo: friend_repo)),
         ],
@@ -89,7 +85,9 @@ class _MyAppState extends State<MyApp> {
           return MaterialApp(
             title: 'Zago',
             theme: theme,
-            home:  AuthScreen(initialMessage: _initialMessage,),
+            home: AuthScreen(
+              initialMessage: _initialMessage,
+            ),
           );
         }));
   }

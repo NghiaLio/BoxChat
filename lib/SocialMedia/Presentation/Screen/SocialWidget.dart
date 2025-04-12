@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chat_app/Authentication/Domains/Entity/User.dart';
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
@@ -28,6 +30,7 @@ class SocialScreen extends StatefulWidget {
 
 class _SocialScreenState extends State<SocialScreen> {
   UserApp? currentUser;
+  
 
   void openSearch() {
     Navigator.push(
@@ -45,6 +48,7 @@ class _SocialScreenState extends State<SocialScreen> {
             builder: (c) => Createpostscreen(
                   currentUser: currentUser,
                   isShowPickedImage: true,
+                  isEditPost: false,
                 )));
   }
 
@@ -55,6 +59,7 @@ class _SocialScreenState extends State<SocialScreen> {
             builder: (c) => Createpostscreen(
                   currentUser: currentUser,
                   isShowPickedImage: false,
+                  isEditPost: false,
                 )));
   }
 
@@ -106,16 +111,57 @@ class _SocialScreenState extends State<SocialScreen> {
             ));
   }
 
-  void openFile(String FileUrl, String user_id, String user_name) {
-    final UserApp user = UserApp(id: user_id, userName: user_name, email: '');
+  void openFile(String fileUrl, String userId, String userName) {
+    final UserApp user = UserApp(id: userId, userName: userName, email: '');
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (c) => DisplayFile(
-                  urlFile: FileUrl,
+                  urlFile: fileUrl,
                   type: MessageType.Image,
-                  userOfFile: user, 
+                  userOfFile: user,
                 )));
+  }
+
+  void deletePost(int postID)async{
+      await context.read<Socialcubits>().deletePost(postID).then((value) {
+        showSnackBar.show_success('Delete post success', context);
+      }).catchError((onError) {
+        showSnackBar.show_error('Delete post fail', context);
+      });
+    
+  }
+
+  void editPost(Posts post)async{
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (c) => Createpostscreen(
+                  currentUser: currentUser,
+                  isShowPickedImage: false,
+                  isEditPost: true,
+                  post: post,
+                ))).then((value) {
+      if (value != null) {
+        showSnackBar.show_success('Edit post success', context);
+      } else {
+        showSnackBar.show_error('Edit post fail', context);
+      }
+    });
+  }
+
+  void selectOption(Object? value, Posts post) {
+    if(value == 'del') {
+      deletePost(post.id!);
+    } else if (value == 'edit') {
+      editPost(post);
+    } else if (value == 'report') {
+      showSnackBar.show_error('Function not support yet', context);
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    await context.read<Socialcubits>().getAllPost(false);
   }
 
   @override
@@ -137,13 +183,18 @@ class _SocialScreenState extends State<SocialScreen> {
           _appBar(),
           //body
           Expanded(
-              child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: _postBar(),
-              ),
-              _displayPost()
-            ],
+              child: RefreshIndicator(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            color: Theme.of(context).colorScheme.primaryContainer,
+            onRefresh: _onRefresh,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _postBar(),
+                ),
+                _displayPost()
+              ],
+            ),
           )),
           // Expanded(child: )
         ],
@@ -264,8 +315,8 @@ class _SocialScreenState extends State<SocialScreen> {
               Row(
                 children: [
                   Container(
-                    height: MediaQuery.of(context).size.width * 0.15,
-                    width: MediaQuery.of(context).size.width * 0.15,
+                    height: MediaQuery.of(context).size.width * 0.13,
+                    width: MediaQuery.of(context).size.width * 0.13,
                     decoration: const BoxDecoration(shape: BoxShape.circle),
                     clipBehavior: Clip.antiAlias,
                     child: post.image_user_url.isEmpty
@@ -288,9 +339,10 @@ class _SocialScreenState extends State<SocialScreen> {
                       Text(
                         post.user_name,
                         style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.surface),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       //time
                       Text(
@@ -302,42 +354,63 @@ class _SocialScreenState extends State<SocialScreen> {
                     ],
                   ),
                   const Spacer(),
-                  // PopupMenuButton(
-                  //     color: Theme.of(context).scaffoldBackgroundColor,
-                  //     padding: EdgeInsets.zero,
-                  //     shape: const RoundedRectangleBorder(
-                  //         borderRadius: BorderRadius.all(Radius.circular(15.0))),
-                  //     icon: Icon(
-                  //       Icons.more_horiz,
-                  //       size: 30,
-                  //       color: Theme.of(context).colorScheme.onSurface,
-                  //     ),
-                  //     itemBuilder: (context) => [
-                  //           PopupMenuItem(
-                  //               value: 'del',
-                  //               child: Text(
-                  //                 'Delete',
-                  //                 style: TextStyle(
-                  //                     color:
-                  //                         Theme.of(context).colorScheme.surface),
-                  //               )),
-                  //           PopupMenuItem(
-                  //               value: 'edit',
-                  //               child: Text('Edit',
-                  //                   style: TextStyle(
-                  //                       color: Theme.of(context)
-                  //                           .colorScheme
-                  //                           .surface))),
-                  //         ]
-                  //     )
-                  IconButton(
-                      onPressed: () => showSnackBar.show_error(
-                          'Funtion not upgrade yet', context),
+                  PopupMenuButton(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      padding: EdgeInsets.zero,
+                      shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(15.0))),
                       icon: Icon(
                         Icons.more_horiz,
                         size: 30,
                         color: Theme.of(context).colorScheme.onSurface,
-                      ))
+                      ),
+                      onSelected:(value)=> selectOption(value, post),
+                      itemBuilder: (context) {
+                        if (currentUser!.id == post.user_id) {
+                          return [
+                            PopupMenuItem(
+                                value: 'del',
+                                child: Text(
+                                  'Delete',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surface),
+                                )),
+                            PopupMenuItem(
+                                value: 'edit',
+                                child: Text('Edit',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surface))),
+                          ];
+                        } else {
+                          return [
+                            PopupMenuItem(
+                                value: 'report',
+                                child: Text(
+                                  'Report',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surface),
+                                )),
+                          ];
+                        }
+                      })
+                  // IconButton(
+                  //     onPressed: () => showSnackBar.show_error(
+                  //         'Funtion not upgrade yet', context),
+                  //     icon: Icon(
+                  //       Icons.more_horiz,
+                  //       size: 30,
+                  //       color: Theme.of(context).colorScheme.onSurface,
+                  //     ))
                 ],
               ),
               //content

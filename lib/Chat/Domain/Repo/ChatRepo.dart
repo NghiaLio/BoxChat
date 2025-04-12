@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 abstract class ChatRepo{
   Future<UserApp> getUserbyID(String ID);
-  Future<List<UserApp>?> getAllUser();
   Stream<QuerySnapshot<Map<String,dynamic>>> getAllFriend();
   // Stream<QuerySnapshot<Map<String,dynamic>>> getAllUser();
   Future<bool?> checkChatRoom(String ID2);

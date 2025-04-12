@@ -189,16 +189,18 @@ class _RegisterState extends State<Register> {
                           'Password',
                           (value) => validatedPass(value),
                           passVisible,
-                          Icon(
-                            passVisible
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            size: 22,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.5),
-                          )),
+                          IconButton(
+                              onPressed: () => passVisibleBtn(),
+                              icon: Icon(
+                                passVisible
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                size: 22,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.5),
+                              ))),
                       const SizedBox(
                         height: 20,
                       ),
@@ -207,16 +209,18 @@ class _RegisterState extends State<Register> {
                           'Confirm Password',
                           (value) => validatedConfirmpass(value),
                           confirmPassVisible,
-                          Icon(
-                            confirmPassVisible
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            size: 22,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.5),
-                          ))
+                          IconButton(
+                              onPressed: () => confirmPassVisibleBtn(),
+                              icon: Icon(
+                                confirmPassVisible
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                size: 22,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.5),
+                              )))
                     ],
                   )),
               //Btn

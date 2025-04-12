@@ -1,3 +1,5 @@
+// ignore_for_file: must_be_immutable
+
 import 'package:chat_app/Authentication/Presentation/Cubit/authCubit.dart';
 import 'package:chat_app/Authentication/Presentation/Cubit/authState.dart';
 import 'package:chat_app/Authentication/Presentation/Screen/LogIn.dart';

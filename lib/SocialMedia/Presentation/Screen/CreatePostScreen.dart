@@ -1,4 +1,4 @@
-// ignore_for_file: must_be_immutable
+// ignore_for_file: must_be_immutable, use_build_context_synchronously
 
 import 'dart:io';
 
@@ -10,12 +10,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../Components/Avatar.dart';
+import '../../Domain/Entities/post.dart';
 
 class Createpostscreen extends StatefulWidget {
   UserApp? currentUser;
   bool isShowPickedImage;
+  bool isEditPost;
+  Posts? post;
   Createpostscreen(
-      {super.key, this.currentUser, required this.isShowPickedImage});
+      {super.key,
+      this.currentUser,
+      required this.isShowPickedImage,
+      required this.isEditPost,
+      this.post});
 
   @override
   State<Createpostscreen> createState() => _CreatepostscreenState();
@@ -80,6 +87,36 @@ class _CreatepostscreenState extends State<Createpostscreen> {
     }
   }
 
+  void updatePost() async {
+    final String content = contentController.text.trim();
+    if (fileSelected != null) {
+      await context
+          .read<Socialcubits>()
+          .updatePost(content, widget.currentUser, fileSelected!.name,
+              File(fileSelected!.path), widget.post!)
+          .then((onValue) => Navigator.pop(context, 200))
+          .catchError((onError) => Navigator.pop(context, null));
+    } else {
+      await context
+          .read<Socialcubits>()
+          .updatePost(content, widget.currentUser, null, null,widget.post!)
+          .then((onValue) => Navigator.pop(context, 200))
+          .catchError((onError) => Navigator.pop(context, null));
+    }
+  }
+
+  void removeImage() {
+    if (widget.isEditPost) {
+      setState(() {
+        widget.post!.post_image_url = '';
+      });
+    } else {
+      setState(() {
+        fileSelected = null;
+      });
+    }
+  }
+
   void actionNotSuport() {
     showSnackBar.show_error('Not Suport', context);
   }
@@ -88,8 +125,10 @@ class _CreatepostscreenState extends State<Createpostscreen> {
   void initState() {
     _focusNode.addListener(_onFocusNodeChange);
     contentController.addListener(_onTextFieldChange);
-
     widget.isShowPickedImage ? pickImage() : null;
+    if (widget.isEditPost) {
+      contentController.text = widget.post!.content;
+    }
     super.initState();
   }
 
@@ -119,7 +158,7 @@ class _CreatepostscreenState extends State<Createpostscreen> {
                 color: Theme.of(context).colorScheme.surface,
               )),
           title: Text(
-            'Create Post',
+            widget.isEditPost ? 'Edit Post' : 'Create Post',
             style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
@@ -136,9 +175,15 @@ class _CreatepostscreenState extends State<Createpostscreen> {
                             .colorScheme
                             .onSurface
                             .withOpacity(0.3)),
-                onPressed: () => isHaveContent ? createPost() : null,
+                onPressed: () {
+                  if (isHaveContent) {
+                    widget.isEditPost ? updatePost() : createPost();
+                  } else {
+                    null;
+                  }
+                },
                 child: Text(
-                  'post',
+                  widget.isEditPost ? 'save' : 'post',
                   style: TextStyle(
                       fontSize: 18,
                       color: isHaveContent
@@ -202,14 +247,44 @@ class _CreatepostscreenState extends State<Createpostscreen> {
                 fontWeight: FontWeight.w400,
                 color: Theme.of(context).colorScheme.surface),
           ),
-          fileSelected != null
-              ? Container(
-                  height: MediaQuery.of(context).size.height * 0.25,
-                  child: Image.file(File(fileSelected!.path)))
-              : Container()
+          if (!widget.isEditPost && fileSelected != null)
+            _displayImageSelected(Image.file(
+              File(fileSelected!.path),
+              fit: BoxFit.contain,
+            )),
+          if (widget.isEditPost &&
+              widget.post != null &&
+              widget.post!.post_image_url.isNotEmpty)
+            _displayImageSelected(Image.network(
+              widget.post!.post_image_url,
+              fit: BoxFit.contain,
+            )),
         ],
       ),
     );
+  }
+
+  Widget _displayImageSelected(Widget image) {
+    return Container(
+        height: MediaQuery.of(context).size.height * 0.25,
+        width: MediaQuery.of(context).size.width,
+        padding: const EdgeInsets.only(top: 10.0),
+        child: Stack(
+          children: [
+            image,
+            Positioned(
+              right: 10,
+              top: -10,
+              child: IconButton(
+                  onPressed: removeImage,
+                  icon: Icon(
+                    Icons.close,
+                    size: 30,
+                    color: Theme.of(context).colorScheme.primary,
+                  )),
+            ),
+          ],
+        ));
   }
 
   Widget _otherSelect(BuildContext context) {

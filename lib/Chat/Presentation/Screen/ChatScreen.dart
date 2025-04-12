@@ -30,6 +30,7 @@ import 'package:record/record.dart';
 
 import '../../../Components/itemMessAudio.dart';
 import '../../../Components/itemMessText.dart';
+import '../../Data/ChatData.dart';
 import '../../Domain/Models/Message.dart';
 import '../../../Components/DisplayFile.dart';
 import 'package:path_provider/path_provider.dart';
@@ -39,13 +40,14 @@ class ChatScreen extends StatefulWidget {
   final ChatRoom? chat;
   final UserApp? user;
   bool isFromHome;
-  ChatScreen({super.key, this.chat, this.user,required this.isFromHome});
+  ChatScreen({super.key, this.chat, this.user, required this.isFromHome});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  final chatRepo = ChatData();
   UserApp? currentUser, receiveUser;
   bool isShowBottomBar = false;
   bool isRecoding = false;
@@ -63,8 +65,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void backButon() {
     cancleRecord();
-    if(!widget.isFromHome){
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (c)=>HomeScreen()));
+    if (!widget.isFromHome) {
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (c) => HomeScreen()));
     }
     Navigator.pop(context);
   }
@@ -140,7 +143,9 @@ class _ChatScreenState extends State<ChatScreen> {
         sendAt: Timestamp.fromDate(DateTime.now()),
         seen: false,
         tail: true);
-    await context.read<DisplayCubit>().sendMess(currentUser!,receiveUser!,mess);
+    await context
+        .read<DisplayCubit>()
+        .sendMess(currentUser!, receiveUser!, mess);
     await context.read<DisplayCubit>().unTailMess(receiveUser!.id);
   }
 
@@ -208,7 +213,9 @@ class _ChatScreenState extends State<ChatScreen> {
         tail: true,
         replyingTo: replying);
     cancleReply();
-    await context.read<DisplayCubit>().sendMess(currentUser!,receiveUser!,mess);
+    await context
+        .read<DisplayCubit>()
+        .sendMess(currentUser!, receiveUser!, mess);
     await context.read<DisplayCubit>().unTailMess(receiveUser!.id);
   }
 
@@ -229,9 +236,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 )));
   }
 
-  String getNameReply(String id) {
+  String getNameReply(String id, Message message) {
     if (currentUser!.id == id) {
-      return 'You replied yourself';
+      return message.senderID == id
+          ? 'You replied yourself'
+          : '${receiveUser!.userName} replied your message';
     } else {
       return 'You replied ${receiveUser!.userName}';
     }
@@ -258,8 +267,11 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    await context.read<DisplayCubit>().deleteMessage(receiveUser!.id,
-        context.read<DisplayCubit>().listMess![indexMessage].sendAt);
+    await context
+        .read<DisplayCubit>()
+        .deleteMessage(receiveUser!.id,
+            context.read<DisplayCubit>().listMess![indexMessage].sendAt)
+        .catchError((onError) => print(onError));
   }
 
   void moveToImage() {
@@ -385,7 +397,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  
   @override
   void initState() {
     currentUser = context.read<AuthCubit>().userData;
@@ -399,223 +410,221 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      body: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          SafeArea(
-            child: Column(
-              children: [
-                //Appbar
-                Padding(
-                  padding: const EdgeInsets.all(15.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          //back button
-                          IconButton(
-                              onPressed: backButon,
-                              icon: Icon(
-                                Icons.arrow_back,
-                                size: 28,
-                                color: Theme.of(context).colorScheme.primary,
-                              )),
-                          const SizedBox(
-                            width: 10,
-                          ),
-                          //Avatar and name
-                          GestureDetector(
-                            onTap: () => viewProfiles(receiveUser),
-                            child: Row(
-                              children: [
-                                Stack(
-                                  alignment: Alignment.bottomRight,
-                                  children: [
-                                    Container(
-                                        height: size.width * 0.13,
-                                        width: size.width * 0.13,
-                                        decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary,
-                                                width: 3)),
-                                        padding: const EdgeInsets.all(5.0),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(50),
-                                          child: receiveUser!.avatarUrl!.isEmpty
-                                              ? const Image(
-                                                  image: AssetImage(
-                                                      'assets/images/person.jpg'),
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : CacheImage(
-                                                  imageUrl:
-                                                      widget.user!.avatarUrl!,
-                                                  widthPlachoder:
-                                                      size.width * 0.13,
-                                                  heightPlachoder:
-                                                      size.width * 0.13),
-                                        )),
-                                    receiveUser!.isOnline!
-                                        ? Container(
-                                            height: 15,
-                                            width: 15,
-                                            decoration: const BoxDecoration(
-                                                color: Colors.green,
-                                                shape: BoxShape.circle),
-                                          )
-                                        : Container()
-                                  ],
-                                ),
-                                const SizedBox(
-                                  width: 15,
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      receiveUser!.userName,
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surface,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                    Text(
-                                      receiveUser!.isOnline!
-                                          ? 'Active now'
-                                          : Timepost.timeBefore(receiveUser!
-                                              .lastActive!
-                                              .toDate()),
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                          fontWeight: FontWeight.w400),
-                                    )
-                                  ],
-                                )
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      //action
-                      IconButton(
-                          onPressed: () => moreAction(null),
-                          icon: Icon(
-                            Icons.more_vert,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 28,
-                          )),
-                    ],
-                  ),
-                ),
-                Divider(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                  height: 1,
-                ),
-                //chat display
-                Expanded(child: BlocBuilder<DisplayCubit, DisplayState>(
-                    builder: (context, state) {
-                  print(state);
-                  if (state is loadingMessage) {
-                    return const Center(
-                      // child: Loading(height_width: MediaQuery.of(context).size.width*0.1 , color: Theme.of(context).colorScheme.primary),
-                      child: PlaceHolder(),
-                    );
-                  } else if (state is loadedMessage) {
-                    //khi tin nhan moi den ma van ben trong man hinh tro chuyen thi tin nhan se cap nhat da seen
-                    context.read<DisplayCubit>().seenMess(receiveUser!.id);
-                    final List<Message> listMess = state.listMessage ?? [];
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (_scrollController.hasClients) {
-                        scrollToBottom();
-                      }
-                    });
-                    return GestureDetector(
-                      onTap: tapToDisplay,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                        child: ListView.builder(
-                            controller: _scrollController,
-                            itemCount: listMess.length,
-                            itemBuilder: (context, index) => _itemMessageChat(
-                                listMess[index],
-                                currentUser!.id == listMess[index].senderID,
-                                index)),
-                      ),
-                    );
-                  } else {
-                    return const Center(
-                      child: Text('Have an error'),
-                    );
-                  }
-                })),
-                Divider(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                ),
-                //input text
-                !isRecoding
-                    ? MessageBar(
-                        onSend: (content) => sendMessage(content, replyingTo),
-                        replying: isReplying,
-                        onTapCloseReply: cancleReply,
-                        replyingTo:
-                            replyingTo.isEmpty ? '' : replyingTo['message'],
-                        sendButtonColor: Theme.of(context).colorScheme.primary,
-                        messageBarColor:
-                            Theme.of(context).scaffoldBackgroundColor,
-                        textFieldTextStyle: TextStyle(
-                            fontSize: 17,
-                            color: Theme.of(context).colorScheme.surface),
-                        actions: [
-                          PopupMenuButton(
-                            color:
-                                Theme.of(context).colorScheme.primaryContainer,
+    body: Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        SafeArea(
+          child: Column(
+            children: [
+              //Appbar
+              Padding(
+                padding: const EdgeInsets.all(15.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        //back button
+                        IconButton(
+                            onPressed: backButon,
                             icon: Icon(
-                              Icons.add,
+                              Icons.arrow_back,
+                              size: 28,
+                              color: Theme.of(context).colorScheme.primary,
+                            )),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        //Avatar and name
+                        GestureDetector(
+                          onTap: () => viewProfiles(receiveUser),
+                          child: Row(
+                            children: [
+                              Stack(
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  Container(
+                                      height: size.width * 0.13,
+                                      width: size.width * 0.13,
+                                      decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                              width: 3)),
+                                      padding: const EdgeInsets.all(5.0),
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(50),
+                                        child: receiveUser!.avatarUrl!.isEmpty
+                                            ? const Image(
+                                                image: AssetImage(
+                                                    'assets/images/person.jpg'),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : CacheImage(
+                                                imageUrl:
+                                                    widget.user!.avatarUrl!,
+                                                widthPlachoder:
+                                                    size.width * 0.13,
+                                                heightPlachoder:
+                                                    size.width * 0.13),
+                                      )),
+                                  receiveUser!.isOnline!
+                                      ? Container(
+                                          height: 15,
+                                          width: 15,
+                                          decoration: const BoxDecoration(
+                                              color: Colors.green,
+                                              shape: BoxShape.circle),
+                                        )
+                                      : Container()
+                                ],
+                              ),
+                              const SizedBox(
+                                width: 15,
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    receiveUser!.userName,
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surface,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                  Text(
+                                    receiveUser!.isOnline!
+                                        ? 'Active now'
+                                        : Timepost.timeBefore(receiveUser!
+                                            .lastActive!
+                                            .toDate()),
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                        fontWeight: FontWeight.w400),
+                                  )
+                                ],
+                              )
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    //action
+                    IconButton(
+                        onPressed: () => moreAction(null),
+                        icon: Icon(
+                          Icons.more_vert,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 28,
+                        )),
+                  ],
+                ),
+              ),
+              Divider(
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                height: 1,
+              ),
+              //chat display
+              Expanded(child: BlocBuilder<DisplayCubit, DisplayState>(
+                  builder: (context, state) {
+                print(state);
+                if (state is loadingMessage) {
+                  return const Center(
+                    // child: Loading(height_width: MediaQuery.of(context).size.width*0.1 , color: Theme.of(context).colorScheme.primary),
+                    child: PlaceHolder(),
+                  );
+                } else if (state is loadedMessage) {
+                  //khi tin nhan moi den ma van ben trong man hinh tro chuyen thi tin nhan se cap nhat da seen
+                  context.read<DisplayCubit>().seenMess(receiveUser!.id);
+                  final List<Message> listMess = state.listMessage ?? [];
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (_scrollController.hasClients) {
+                      scrollToBottom();
+                    }
+                  });
+                  return GestureDetector(
+                    onTap: tapToDisplay,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                      child: ListView.builder(
+                          controller: _scrollController,
+                          itemCount: listMess.length,
+                          itemBuilder: (context, index) => _itemMessageChat(
+                              listMess[index],
+                              currentUser!.id == listMess[index].senderID,
+                              index)),
+                    ),
+                  );
+                } else {
+                  return const Center(
+                    child: Text('Have an error'),
+                  );
+                }
+              })),
+              Divider(
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+              ),
+              //input text
+              !isRecoding
+                  ? MessageBar(
+                      onSend: (content) => sendMessage(content, replyingTo),
+                      replying: isReplying,
+                      onTapCloseReply: cancleReply,
+                      replyingTo:
+                          replyingTo.isEmpty ? '' : replyingTo['message'],
+                      sendButtonColor: Theme.of(context).colorScheme.primary,
+                      messageBarColor:
+                          Theme.of(context).scaffoldBackgroundColor,
+                      textFieldTextStyle:
+                          const TextStyle(fontSize: 17, color: Colors.black),
+                      actions: [
+                        PopupMenuButton(
+                          color:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          icon: Icon(
+                            Icons.add,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          onSelected: (value) => moreAction(value),
+                          itemBuilder: (context) => listAction,
+                        ),
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: GestureDetector(
+                            onTap: () => pickImage(),
+                            child: Icon(
+                              Icons.image,
+                              size: 28,
                               color: Theme.of(context).colorScheme.primary,
                             ),
-                            onSelected: (value) => moreAction(value),
-                            itemBuilder: (context) => listAction,
                           ),
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8.0),
-                            child: GestureDetector(
-                              onTap: () => pickImage(),
-                              child: Icon(
-                                Icons.image,
-                                size: 28,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : itemBarAudio(
-                        textTime: formatDuration(_duration),
-                        cancleRecord: () => cancleRecord(),
-                        stopRecord: () => _stopRecording(),
-                        confirmRecord: () => confirmRecord(),
-                      )
-              ],
-            ),
+                        ),
+                      ],
+                    )
+                  : itemBarAudio(
+                      textTime: formatDuration(_duration),
+                      cancleRecord: () => cancleRecord(),
+                      stopRecord: () => _stopRecording(),
+                      confirmRecord: () => confirmRecord(),
+                    )
+            ],
           ),
-          bottomBar()
-        ],
-      ),
-    );
-  }
+        ),
+        bottomBar()
+      ],
+    ),
+        ) ; }
 
   Widget _itemMessageChat(
     Message message,
