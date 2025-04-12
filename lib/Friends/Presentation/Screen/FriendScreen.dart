@@ -150,6 +150,11 @@ class _FriendscreenState extends State<FriendScreen> {
                         //required
                         listRequired.isNotEmpty
                             ? RefreshIndicator(
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
                                 onRefresh: () =>
                                     context.read<Friendcubit>().fetchData(),
                                 child: ListView.builder(
@@ -163,6 +168,9 @@ class _FriendscreenState extends State<FriendScreen> {
                             : textCenter('No Required'),
                         //Suggest
                         RefreshIndicator(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          color: Theme.of(context).colorScheme.primaryContainer,
                           onRefresh: () =>
                               context.read<Friendcubit>().fetchData(),
                           child: ListView.builder(
@@ -176,6 +184,11 @@ class _FriendscreenState extends State<FriendScreen> {
                         //Friends
                         listFriends.isNotEmpty
                             ? RefreshIndicator(
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
                                 onRefresh: () =>
                                     context.read<Friendcubit>().fetchData(),
                                 child: ListView.builder(

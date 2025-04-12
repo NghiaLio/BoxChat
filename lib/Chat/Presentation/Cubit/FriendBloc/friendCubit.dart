@@ -32,8 +32,10 @@ class ListFriendcubit extends Cubit<ListFriendstate> {
           }));
           _listFriends = parseList;
           emit(getListFriendSuccess(listFriends: parseList));
+        }else{
+          emit(getListFriendSuccess(listFriends: null));
         }
-        emit(getListFriendSuccess(listFriends: null));
+        
       }, onError: (error) {
         emit(onErrorListFriend(error.toString()));
       });

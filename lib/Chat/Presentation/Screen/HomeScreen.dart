@@ -147,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 index: stateNav.index,
                 children: screen,
               ),
+              // body:screen[stateNav.index],
               bottomNavigationBar: BottomNavigationBar(
                   backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                   currentIndex: stateNav.index,
