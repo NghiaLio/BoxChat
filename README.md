@@ -1,16 +1,15 @@
-# chat_app
+# Zago_app
+Phát triển một ứng dụng nhắn tin cơ bản tích hợp với nền tảng mạng xã hội, cho phép người dùng chia sẻ và đăng cập nhật trạng thái,
+hình ảnh và video.
 
-A new Flutter project.
+## Công nghệ sử dụng:
+- Giao diện người dùng: Flutter (StateManagement: Bloc)
+- Giao diện người dùng: Firebase (Authentication , FireStore, Notifications ), Supabase (Database , Storage )
+## Chức năng chính:
+- Đăng ký, đăng nhập ...
+- Gửi tin nhắn qua văn bản, hình ảnh, video hoặc âm thanh
+- Tải lên văn bản, hình ảnh và video. Tương tác với bài đăng bằng cách thích và bình luận ...
+- Thay đổi thông tin tài khoản và chủ đề,...
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## -Video demo, file apk and account test : 
+[Truy cập tại đây.](https://drive.google.com/drive/folders/1d8XM-G9ulk_YZNJFW7axbiAz1q5U-s5O?usp=sharing)
